@@ -1,0 +1,79 @@
+{
+  "name": "react-riyils",
+  "version": "1.0.1",
+  "description": "A React component library for creating Instagram/TikTok-style vertical video swiper",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.esm.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./dist/index.css": "./dist/index.css"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "assets"
+  ],
+  "sideEffects": [
+    "*.css"
+  ],
+  "scripts": {
+    "dev": "rollup -c -w",
+    "build": "rollup -c",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "react",
+    "video",
+    "swiper",
+    "instagram",
+    "reels",
+    "tiktok",
+    "vertical-video",
+    "riyils",
+    "video-player",
+    "react-component",
+    "video-carousel",
+    "shorts",
+    "stories",
+    "mobile-video",
+    "typescript"
+  ],
+  "author": "illegal-instruction-co",
+  "license": "MIT",
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "dependencies": {
+    "lucide-react": "^0.562.0",
+    "swiper": "^12.0.3"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^29.0.0",
+    "@rollup/plugin-node-resolve": "^15.3.0",
+    "@rollup/plugin-typescript": "^12.3.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "autoprefixer": "^10.4.23",
+    "rollup": "^4.54.0",
+    "rollup-plugin-peer-deps-external": "^2.2.4",
+    "rollup-plugin-postcss": "^4.0.2",
+    "tslib": "^2.8.1",
+    "typescript": "^5.9.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/illegal-instruction-co/react-riyils.git"
+  },
+  "homepage": "https://github.com/illegal-instruction-co/react-riyils#readme",
+  "bugs": {
+    "url": "https://github.com/illegal-instruction-co/react-riyils/issues"
+  },
+  "type": "module"
+}
