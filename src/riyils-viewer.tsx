@@ -1,45 +1,73 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Keyboard, Mousewheel } from 'swiper/modules';
+import { Keyboard, Mousewheel, Virtual } from 'swiper/modules';
 import type { Swiper as SwiperType } from 'swiper';
-import { X, Volume2, VolumeX, ChevronDown } from 'lucide-react';
+import {
+  X,
+  Volume2,
+  VolumeX,
+  Play,
+  Pause,
+  ChevronsRight,
+  ChevronsLeft,
+  ChevronsUp,
+  Zap
+} from 'lucide-react';
 
 import 'swiper/css';
+import 'swiper/css/virtual';
 
 export interface Video {
   id: string;
   videoUrl: string;
   thumbnailUrl?: string;
   duration?: number;
+  captionUrl?: string;
 }
 
 export interface RiyilsTranslations {
-  swipe: string;
   close: string;
-  mute: string;
-  unmute: string;
   speedIndicator: string;
-  videoViewer: string;
-  videoInteractionArea: string;
+  forward: string;
+  rewind: string;
 }
 
-const defaultTranslations: RiyilsTranslations = {
-  swipe: 'Swipe',
+export const defaultRiyilsTranslations: RiyilsTranslations = {
   close: 'Close',
-  mute: 'Mute',
-  unmute: 'Unmute',
-  speedIndicator: '2x',
-  videoViewer: 'Video viewer',
-  videoInteractionArea: 'Video interaction area',
+  speedIndicator: '2x Speed',
+  forward: '10s Forward',
+  rewind: '10s Rewind',
 };
 
 export interface RiyilsViewerProps {
   readonly videos: Video[];
   readonly initialIndex?: number;
-  readonly onClose?: () => void;
+  readonly onClose: () => void;
   readonly onVideoChange?: (index: number) => void;
-  readonly translations?: RiyilsTranslations;
+  readonly translations?: Partial<RiyilsTranslations>;
   readonly progressBarColor?: string;
+}
+
+const DOUBLE_TAP_DELAY = 300;
+const LONG_PRESS_DELAY = 500;
+const SEEK_TIME = 10;
+const ANIMATION_DURATION = 600;
+const SCROLL_HINT_DURATION = 1000;
+
+function useLockBodyScroll() {
+  useEffect(() => {
+    const body = globalThis.document.body;
+    const originalStyle = globalThis.getComputedStyle(body).overflow;
+    const originalOverscroll = body.style.overscrollBehavior;
+
+    body.style.overflow = 'hidden';
+    body.style.overscrollBehavior = 'none';
+
+    return () => {
+      body.style.overflow = originalStyle;
+      body.style.overscrollBehavior = originalOverscroll;
+    };
+  }, []);
 }
 
 export function RiyilsViewer({
@@ -47,360 +75,394 @@ export function RiyilsViewer({
   initialIndex = 0,
   onClose,
   onVideoChange,
-  translations = defaultTranslations,
-  progressBarColor = '#FF0000',
+  translations = {},
+  progressBarColor = '#fff',
 }: Readonly<RiyilsViewerProps>) {
+  useLockBodyScroll();
+
+  const t = useMemo(() => ({
+    ...defaultRiyilsTranslations,
+    ...translations
+  }), [translations]);
+
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
-  const [isPaused, setIsPaused] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
-  const [videoProgress, setVideoProgress] = useState(0);
-  const [isLoading, setIsLoading] = useState<Record<number, boolean>>({});
+  const [progress, setProgress] = useState(0);
   const [isSpeedUp, setIsSpeedUp] = useState(false);
-  const [showSwipeTip, setShowSwipeTip] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [seekFeedback, setSeekFeedback] = useState<'forward' | 'rewind' | null>(null);
+  const [showPlayPauseIcon, setShowPlayPauseIcon] = useState(false);
+  const [showScrollHint, setShowScrollHint] = useState(false);
+
   const swiperRef = useRef<SwiperType | null>(null);
-  const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
-  const lastTapRef = useRef(0);
-  const holdTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const activeVideoRef = useRef<HTMLVideoElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const doubleTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTapTime = useRef<number>(0);
+  const longPressTriggered = useRef<boolean>(false);
 
   useEffect(() => {
-    const currentVideoElement = videoRefs.current[currentIndex];
-    if (!currentVideoElement) return;
+    const container = containerRef.current;
+    if (!container) return;
 
-    const updateProgress = () => {
-      const progress = (currentVideoElement.currentTime / currentVideoElement.duration) * 100;
-      setVideoProgress(progress || 0);
+    const handleContextMenu = (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
     };
 
-    currentVideoElement.addEventListener('timeupdate', updateProgress, { passive: true });
+    container.addEventListener('contextmenu', handleContextMenu);
     return () => {
-      currentVideoElement.removeEventListener('timeupdate', updateProgress);
+      container.removeEventListener('contextmenu', handleContextMenu);
     };
-  }, [currentIndex]);
+  }, []);
 
   useEffect(() => {
-    onVideoChange?.(currentIndex);
-  }, [currentIndex, onVideoChange]);
+    const video = activeVideoRef.current;
+    if (!video) return;
+
+    if (isPlaying) {
+      const playPromise = video.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          setIsPlaying(false);
+        });
+      }
+    } else {
+      video.pause();
+    }
+  }, [currentIndex, isPlaying]);
 
   useEffect(() => {
-    setShowSwipeTip(true);
+    const video = activeVideoRef.current;
+    if (video) {
+      video.muted = isMuted;
+      video.playbackRate = isSpeedUp ? 2 : 1;
+    }
+  }, [isMuted, isSpeedUp, currentIndex]);
+
+  useEffect(() => {
+    setShowScrollHint(true);
     const timer = setTimeout(() => {
-      setShowSwipeTip(false);
-    }, 3000);
+      setShowScrollHint(false);
+    }, SCROLL_HINT_DURATION);
+
     return () => clearTimeout(timer);
   }, [currentIndex]);
 
   useEffect(() => {
-    videoRefs.current.forEach((video, index) => {
-      if (video) {
-        if (index === currentIndex && !isPaused) {
-          video.playbackRate = isSpeedUp ? 2 : 1;
-          video.play().catch(() => { });
-        } else {
-          video.pause();
-        }
+    if (swiperRef.current) {
+      swiperRef.current.virtual.update(true);
+      swiperRef.current.update();
+      if (swiperRef.current.keyboard) {
+        swiperRef.current.keyboard.enable();
       }
+    }
+  }, [videos.length]);
+
+  const handleTimeUpdate = useCallback((e: React.SyntheticEvent<HTMLVideoElement>) => {
+    const vid = e.currentTarget;
+    if (vid.duration) {
+      setProgress((vid.currentTime / vid.duration) * 100);
+    }
+  }, []);
+
+  const handleTouchStart = useCallback(() => {
+    longPressTriggered.current = false;
+    longPressTimer.current = setTimeout(() => {
+      setIsSpeedUp(true);
+      longPressTriggered.current = true;
+    }, LONG_PRESS_DELAY);
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+    }
+    setIsSpeedUp(false);
+  }, []);
+
+  const handleSeek = useCallback((seconds: number) => {
+    const video = activeVideoRef.current;
+    if (!video) return;
+
+    video.currentTime = Math.min(Math.max(video.currentTime + seconds, 0), video.duration);
+
+    setSeekFeedback(seconds > 0 ? 'forward' : 'rewind');
+    setTimeout(() => setSeekFeedback(null), ANIMATION_DURATION);
+  }, []);
+
+  const togglePlay = useCallback(() => {
+    setIsPlaying(prev => {
+      const newState = !prev;
+      setShowPlayPauseIcon(true);
+      setTimeout(() => setShowPlayPauseIcon(false), ANIMATION_DURATION);
+      return newState;
     });
-  }, [currentIndex, isPaused, isSpeedUp]);
+  }, []);
+
+  const handleZoneClick = useCallback((zone: 'left' | 'center' | 'right', e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (longPressTriggered.current) {
+      longPressTriggered.current = false;
+      return;
+    }
+
+    const now = Date.now();
+    const timeDiff = now - lastTapTime.current;
+
+    if (timeDiff < DOUBLE_TAP_DELAY && timeDiff > 0) {
+      if (doubleTapTimer.current) {
+        clearTimeout(doubleTapTimer.current);
+      }
+
+      if (zone === 'right') {
+        handleSeek(SEEK_TIME);
+      } else if (zone === 'left') {
+        handleSeek(-SEEK_TIME);
+      } else {
+        togglePlay();
+      }
+
+      lastTapTime.current = 0;
+    } else {
+      lastTapTime.current = now;
+      doubleTapTimer.current = setTimeout(() => {
+        togglePlay();
+        lastTapTime.current = 0;
+      }, DOUBLE_TAP_DELAY);
+    }
+  }, [handleSeek, togglePlay]);
+
+  const handleMuteToggle = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsMuted(prev => !prev);
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      switch (e.key) {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      switch (e.code) {
         case 'Escape':
           e.preventDefault();
-          onClose?.();
+          onClose();
           break;
-        case ' ':
+        case 'Space':
           e.preventDefault();
-          setIsPaused((prev) => !prev);
+          togglePlay();
           break;
-        case 'm':
-        case 'M':
+        case 'KeyM':
           e.preventDefault();
           setIsMuted((prev) => !prev);
+          break;
+        default:
           break;
       }
     };
 
     globalThis.addEventListener('keydown', handleKeyDown);
-    return () => globalThis.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+    return () => {
+      globalThis.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose, togglePlay]);
 
-  const handleSlideChange = (swiper: SwiperType) => {
-    setCurrentIndex(swiper.activeIndex);
-    setVideoProgress(0);
-  };
-
-  const handleVideoClick = () => {
-    const now = Date.now();
-    const timeSinceLastTap = now - lastTapRef.current;
-
-    if (timeSinceLastTap < 300 && timeSinceLastTap > 0) {
-      setIsPaused((prev) => !prev);
-      lastTapRef.current = 0;
-    } else {
-      lastTapRef.current = now;
+  const handleSlideChange = useCallback((s: SwiperType) => {
+    setCurrentIndex(s.activeIndex);
+    setProgress(0);
+    setIsPlaying(true);
+    setSeekFeedback(null);
+    if (onVideoChange) {
+      onVideoChange(s.activeIndex);
     }
-  };
+  }, [onVideoChange]);
 
-  const handleTouchStart = (e: React.TouchEvent<HTMLElement>, index: number) => {
-    const touch = e.touches[0];
-    const target = e.currentTarget;
-    const rect = target.getBoundingClientRect();
-    const x = touch.clientX - rect.left;
-    const width = rect.width;
-
-    if (x > width * 0.6 && index === currentIndex) {
-      holdTimeoutRef.current = setTimeout(() => {
-        setIsSpeedUp(true);
-      }, 100);
-    }
-  };
-
-  const clearSpeedUp = () => {
-    if (holdTimeoutRef.current) {
-      clearTimeout(holdTimeoutRef.current);
-      holdTimeoutRef.current = null;
-    }
-    setIsSpeedUp(false);
-  };
-
-  const handleTouchEnd = clearSpeedUp;
-
-  const handleMouseDown = (e: React.MouseEvent<HTMLElement>, index: number) => {
-    const target = e.currentTarget;
-    const rect = target.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const width = rect.width;
-
-    if (x > width * 0.6 && index === currentIndex) {
-      holdTimeoutRef.current = setTimeout(() => {
-        setIsSpeedUp(true);
-      }, 100);
-    }
-  };
-
-  const handleMouseUp = clearSpeedUp;
-
-  const goToNextVideo = () => {
-    if (currentIndex < videos.length - 1) {
-      swiperRef.current?.slideNext();
-    } else {
-      onClose?.();
-    }
-  };
+  const preventDefaultMenu = useCallback((e: React.SyntheticEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+  }, []);
 
   return (
-    <dialog
-      open
+    <div
+      ref={containerRef}
       className="react-riyils-viewer"
-      onContextMenu={(e) => e.preventDefault()}
-      aria-label={translations.videoViewer}
-      style={{
-        touchAction: 'pan-y',
-        WebkitTapHighlightColor: 'transparent',
-        userSelect: 'none',
-        WebkitUserSelect: 'none',
-        overscrollBehavior: 'none',
-      }}
+      style={{ WebkitTouchCallout: 'none' } as React.CSSProperties}
     >
-      <Swiper
-        modules={[Keyboard, Mousewheel]}
-        direction="vertical"
-        slidesPerView={1}
-        speed={500}
-        threshold={5}
-        touchRatio={1}
-        touchAngle={45}
-        followFinger={true}
-        shortSwipes={true}
-        longSwipes={true}
-        longSwipesRatio={0.5}
-        longSwipesMs={300}
-        preventInteractionOnTransition={false}
-        keyboard={{ enabled: true }}
-        mousewheel={{ forceToAxis: true, sensitivity: 1 }}
-        initialSlide={initialIndex}
-        onSwiper={(swiper) => {
-          swiperRef.current = swiper;
-        }}
-        onSlideChange={handleSlideChange}
-        onReachEnd={() => {
-          setTimeout(() => {
-            onClose?.();
-          }, 300);
-        }}
-        style={{ width: '100%', height: '100%' }}
-      >
-        {videos.map((video, index) => {
-          const isActive = index === currentIndex;
+      <div className="react-riyils-viewer__gradient-top" />
 
-          return (
-            <SwiperSlide key={video.id}>
-              <section
-                className="react-riyils-viewer__section"
-                aria-label={`Video ${index + 1} of ${videos.length}`}
-              >
-                <button
-                  type="button"
-                  className="react-riyils-viewer__interaction-area"
-                  onTouchStart={(e) => handleTouchStart(e, index)}
-                  onTouchEnd={handleTouchEnd}
-                  onMouseDown={(e) => handleMouseDown(e, index)}
-                  onMouseUp={handleMouseUp}
-                  onMouseLeave={handleMouseUp}
-                  onContextMenu={(e) => e.preventDefault()}
-                  aria-label={translations.videoInteractionArea}
-                />
+      <div className="react-riyils-viewer__close-container">
+        <button
+          type="button"
+          onClick={onClose}
+          className="react-riyils-viewer__btn react-riyils-viewer__btn-close"
+          aria-label={t.close}
+        >
+          <X size={24} strokeWidth={2.5} />
+        </button>
+      </div>
+
+      <Swiper
+        modules={[Keyboard, Mousewheel, Virtual]}
+        direction="vertical"
+        initialSlide={initialIndex}
+        onSwiper={(s) => (swiperRef.current = s)}
+        onSlideChange={handleSlideChange}
+        className="h-full w-full"
+        style={{ height: '100%', width: '100%' }}
+        threshold={10}
+        speed={400}
+        keyboard={{ enabled: true }}
+        mousewheel={{ enabled: true, thresholdDelta: 50 }}
+        virtual={{ enabled: true, addSlidesBefore: 1, addSlidesAfter: 2 }}
+      >
+        {videos.map((video, index) => (
+          <SwiperSlide key={video.id} virtualIndex={index} className="react-riyils-viewer__slide">
+            {index === currentIndex ? (
+              <>
+                <fieldset
+                  className="react-riyils-viewer__gesture-grid"
+                  onContextMenu={preventDefaultMenu}
+                  tabIndex={-1}
+                  style={{ border: 0, margin: 0, padding: 0 }}
+                >
+                  <button
+                    type="button"
+                    className="react-riyils-viewer__gesture-zone"
+                    onClick={(e) => handleZoneClick('left', e)}
+                    aria-label={t.rewind}
+                  />
+
+                  <button
+                    type="button"
+                    className="react-riyils-viewer__gesture-zone"
+                    onClick={(e) => handleZoneClick('center', e)}
+                    aria-label={isPlaying ? 'Pause' : 'Play'}
+                  />
+
+                  <button
+                    type="button"
+                    className="react-riyils-viewer__gesture-zone"
+                    onClick={(e) => handleZoneClick('right', e)}
+                    onTouchStart={handleTouchStart}
+                    onTouchEnd={handleTouchEnd}
+                    onMouseDown={handleTouchStart}
+                    onMouseUp={handleTouchEnd}
+                    aria-label={t.forward}
+                  />
+                </fieldset>
+
+                <div className={`react-riyils-viewer__feedback-speed ${isSpeedUp ? 'visible' : ''}`}>
+                  <Zap size={16} fill="currentColor" className="text-yellow-400" />
+                  <span>{t.speedIndicator}</span>
+                </div>
+
+                {!isPlaying && (
+                  <div className="react-riyils-viewer__feedback-center">
+                    <div className="react-riyils-viewer__feedback-icon animate-in">
+                      <Play size={32} fill="white" />
+                    </div>
+                  </div>
+                )}
+
+                {isPlaying && showPlayPauseIcon && (
+                  <div className="react-riyils-viewer__feedback-center">
+                    <div className="react-riyils-viewer__feedback-icon animate-out">
+                      <Pause size={32} fill="white" />
+                    </div>
+                  </div>
+                )}
+
+                {seekFeedback && (
+                  <div className={`react-riyils-viewer__feedback-seek ${seekFeedback === 'forward' ? 'right' : 'left'}`}>
+                    <div className="react-riyils-viewer__seek-circle">
+                      {seekFeedback === 'forward' ? <ChevronsRight size={32} /> : <ChevronsLeft size={32} />}
+                      <span className="react-riyils-viewer__seek-text">10s</span>
+                    </div>
+                  </div>
+                )}
+
                 <video
-                  ref={(el) => {
-                    videoRefs.current[index] = el;
-                  }}
+                  ref={activeVideoRef}
                   src={video.videoUrl}
-                  aria-label={`Video ${index + 1}`}
-                  onClick={handleVideoClick}
-                  onContextMenu={(e) => e.preventDefault()}
                   className="react-riyils-viewer__video"
                   playsInline
+                  loop
                   muted={isMuted}
-                  preload={Math.abs(index - currentIndex) <= 1 ? 'auto' : 'metadata'}
-                  onLoadStart={() => {
-                    setIsLoading(prev => ({ ...prev, [index]: true }));
-                  }}
-                  onLoadedData={() => {
-                    setIsLoading(prev => ({ ...prev, [index]: false }));
-                  }}
-                  onWaiting={() => {
-                    setIsLoading(prev => ({ ...prev, [index]: true }));
-                  }}
-                  onCanPlay={() => {
-                    setIsLoading(prev => ({ ...prev, [index]: false }));
-                  }}
-                  onEnded={(e) => {
-                    if (isActive) {
-                      const target = e.target as HTMLVideoElement;
-                      if (target.currentTime >= target.duration - 0.1) {
-                        goToNextVideo();
-                      }
-                    }
-                  }}
-                  onTimeUpdate={(e) => {
-                    if (isActive) {
-                      const target = e.target as HTMLVideoElement;
-                      setVideoProgress((target.currentTime / target.duration) * 100);
-                    }
-                  }}
+                  autoPlay
+                  poster={video.thumbnailUrl}
+                  onTimeUpdate={handleTimeUpdate}
+                  onContextMenu={preventDefaultMenu}
+                  disablePictureInPicture
+                  disableRemotePlayback
+                  aria-label={`Video ${video.id}`}
                 >
-                  <track kind="captions" />
+                  <track
+                    kind="captions"
+                    src={video.captionUrl || ''}
+                    label="English"
+                  />
                 </video>
-
-                {isLoading[index] && isActive && (
-                  <div className="react-riyils-viewer__loading">
-                    <div className="react-riyils-viewer__loading-spinner" />
-                  </div>
-                )}
-
-                {isPaused && isActive && (
-                  <div className="react-riyils-viewer__pause-indicator">
-                    <div className="react-riyils-viewer__pause-icon">
-                      <div className="react-riyils-viewer__pause-bars"
-                        style={{ borderLeftColor: 'rgba(255, 255, 255, 0.9)', borderRightColor: 'rgba(255, 255, 255, 0.9)' }} />
-                    </div>
-                  </div>
-                )}
-
-                {isSpeedUp && isActive && (
-                  <div className="react-riyils-viewer__speed-indicator">
-                    <div className="react-riyils-viewer__speed-badge">
-                      <span className="react-riyils-viewer__speed-text">{translations.speedIndicator}</span>
-                    </div>
-                  </div>
-                )}
-              </section>
-            </SwiperSlide>
-          );
-        })}
+              </>
+            ) : (
+              <div className="react-riyils-viewer__slide">
+                <div className="react-riyils-viewer__loader" />
+              </div>
+            )}
+          </SwiperSlide>
+        ))}
       </Swiper>
 
-      <div className="react-riyils-viewer__overlay">
-        <div className="react-riyils-viewer__header">
-          <div className="react-riyils-viewer__header-content">
-            <div className="react-riyils-viewer__progress-wrapper">
-              <div className="react-riyils-viewer__progress-track" style={{ backgroundColor: `${progressBarColor}30` }}>
-                <div
-                  className="react-riyils-viewer__progress-bar"
-                  style={{ width: `${videoProgress}%`, backgroundColor: progressBarColor }}
-                />
-              </div>
-            </div>
+      <div
+        className="react-riyils-viewer__scroll-hint"
+        style={{
+          position: 'absolute',
+          bottom: '80px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 45,
+          pointerEvents: 'none',
+          opacity: showScrollHint ? 1 : 0,
+          transition: 'opacity 0.5s ease-in-out',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          animation: showScrollHint ? 'rr-bounce 1s infinite' : 'none',
+        }}
+      >
+        <ChevronsUp size={32} color="rgba(255, 255, 255, 0.7)" />
+      </div>
 
-            <button
-              onClick={onClose}
-              className="react-riyils-viewer__close-button"
-              aria-label={translations.close}
-            >
-              <X className="react-riyils-viewer__close-icon" />
-            </button>
-          </div>
-        </div>
-
-        {currentIndex === 0 && showSwipeTip && (
-          <div className="react-riyils-viewer__swipe-tip">
-            <div className="react-riyils-viewer__swipe-tip-content">
-              <p className="react-riyils-viewer__swipe-tip-text">
-                {translations.swipe}
-              </p>
-
-              <div className="react-riyils-viewer__swipe-tip-icon-wrapper">
-                <ChevronDown
-                  className="react-riyils-viewer__swipe-tip-icon react-riyils-viewer__swipe-tip-icon--1"
-                />
-                <ChevronDown
-                  className="react-riyils-viewer__swipe-tip-icon react-riyils-viewer__swipe-tip-icon--2"
-                />
-                <ChevronDown
-                  className="react-riyils-viewer__swipe-tip-icon react-riyils-viewer__swipe-tip-icon--3"
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {showSwipeTip && currentIndex > 0 && (
-          <div className="react-riyils-viewer__swipe-tip">
-            <div className="react-riyils-viewer__swipe-tip-content">
-              <p className="react-riyils-viewer__swipe-tip-text">
-                {translations.swipe}
-              </p>
-
-              <div className="react-riyils-viewer__swipe-tip-icon-wrapper">
-                <ChevronDown
-                  className="react-riyils-viewer__swipe-tip-icon react-riyils-viewer__swipe-tip-icon--1"
-                />
-                <ChevronDown
-                  className="react-riyils-viewer__swipe-tip-icon react-riyils-viewer__swipe-tip-icon--2"
-                />
-                <ChevronDown
-                  className="react-riyils-viewer__swipe-tip-icon react-riyils-viewer__swipe-tip-icon--3"
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="react-riyils-viewer__mute-button-wrapper">
+      <div className="react-riyils-viewer__gradient-bottom">
+        <div className="react-riyils-viewer__controls-row">
           <button
-            onClick={() => setIsMuted(!isMuted)}
-            className="react-riyils-viewer__mute-button"
-            aria-label={isMuted ? translations.unmute : translations.mute}
+            type="button"
+            onClick={handleMuteToggle}
+            className="react-riyils-viewer__btn react-riyils-viewer__btn-mute"
           >
-            {isMuted ? (
-              <VolumeX className="react-riyils-viewer__mute-icon" />
-            ) : (
-              <Volume2 className="react-riyils-viewer__mute-icon" />
-            )}
+            {isMuted ? <VolumeX size={24} /> : <Volume2 size={24} />}
           </button>
         </div>
+
+        <div className="react-riyils-viewer__progress-container">
+          <div
+            className="react-riyils-viewer__progress-fill"
+            style={{ width: `${progress}%`, background: progressBarColor }}
+          />
+        </div>
       </div>
-    </dialog>
+
+      <style>{`
+        @keyframes rr-bounce {
+          0%, 100% { transform: translateX(-50%) translateY(0); }
+          50% { transform: translateX(-50%) translateY(-10px); }
+        }
+      `}</style>
+    </div>
   );
 }
