@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>React Riyils - Production Demo</title>
+
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
+  <link rel="stylesheet" href="dist/index.css">
+  <script src="dist/index.umd.js"></script>
+
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              500: '#0ea5e9',
+              600: '#0284c7',
+            }
+          },
+          animation: {
+            'float': 'float 6s ease-in-out infinite',
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-20px)' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #ffffff;
+      overflow-x: hidden;
+    }
+
+    ::-webkit-scrollbar {
+      width: 0px;
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg, #0284c7 0%, #6366f1 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .blob-bg {
+      position: absolute;
+      filter: blur(100px);
+      z-index: -1;
+      opacity: 0.4;
+    }
+  </style>
+</head>
+
+<body class="text-slate-900 font-sans antialiased">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo, useRef } = React;
+    const { createRoot } = ReactDOM;
+    const { ReactRiyils, RiyilsViewer } = window.ReactRiyils || {};
+
+    const TEXT_CONTENT = {
+      nav: {
+        brand: "React Riyils",
+        githubUrl: "https://github.com/illegal-instruction-co/react-riyils"
+      },
+      hero: {
+        badge: "v2.0 Production Ready",
+        headlinePrefix: "Riyils for the",
+        headlineGradient: "Modern Web",
+        subheadline: "The most performant React component for Instagram-like riyils and vertical video feeds.",
+        ctaPrimary: "Get Started",
+        ctaSecondary: "Star on GitHub"
+      },
+      stats: [
+        { val: "2KB", label: "Gzipped" },
+        { val: "100%", label: "TypeScript" },
+        { val: "MIT", label: "License" }
+      ],
+      aria: {
+        carousel: "Featured Riyils",
+        activeSlide: "View Fullscreen",
+        inactiveSlide: "Switch video",
+        watch: "Watch Now",
+        close: "Close Viewer",
+        speed: "Playback Speed",
+        forward: "Fast Forward",
+        rewind: "Rewind"
+      }
+    };
+
+    const initialVideos = [
+      {
+        id: '1',
+        videoUrl: '/assets/1.mp4'
+      },
+      {
+        id: '2',
+        videoUrl: '/assets/2.mp4'
+      },
+      {
+        id: '3',
+        videoUrl: '/assets/3.mp4'
+      },
+      {
+        id: '4',
+        videoUrl: '/assets/4.mp4'
+      },
+    ];
+
+    function App() {
+      const [videos, setVideos] = useState(initialVideos);
+      const [currentIndex, setCurrentIndex] = useState(0);
+      const [showViewer, setShowViewer] = useState(false);
+      const isLoadingRef = useRef(false);
+
+      const carouselTranslations = useMemo(() => ({
+        ctaButton: TEXT_CONTENT.aria.watch,
+        carouselAriaLabel: TEXT_CONTENT.aria.carousel,
+        slideActiveAriaLabel: TEXT_CONTENT.aria.activeSlide,
+        slideInactiveAriaLabel: TEXT_CONTENT.aria.inactiveSlide
+      }), []);
+
+      const viewerTranslations = useMemo(() => ({
+        close: TEXT_CONTENT.aria.close,
+        speedIndicator: TEXT_CONTENT.aria.speed,
+        forward: TEXT_CONTENT.aria.forward,
+        rewind: TEXT_CONTENT.aria.rewind
+      }), []);
+
+      useEffect(() => {
+        if (isLoadingRef.current) return;
+        if (currentIndex >= videos.length - 2) {
+          isLoadingRef.current = true;
+          setTimeout(() => {
+            setVideos(prev => {
+              const newVideos = initialVideos.map((v, i) => ({
+                ...v,
+                id: `vid_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+              }));
+              return [...prev, ...newVideos];
+            });
+            isLoadingRef.current = false;
+          }, 800);
+        }
+      }, [currentIndex, videos.length]);
+
+      return (
+        <div className="min-h-screen relative flex flex-col overflow-hidden">
+          <div className="blob-bg bg-blue-100 top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full mix-blend-multiply"></div>
+          <div className="blob-bg bg-indigo-100 top-[20%] right-[-10%] w-[40%] h-[40%] rounded-full mix-blend-multiply"></div>
+
+          <nav className="w-full max-w-[1400px] mx-auto px-6 py-8 flex justify-between items-center z-30">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center text-white">
+                <i className="fa-solid fa-play text-xs"></i>
+              </div>
+              <span className="font-bold text-lg tracking-tight text-slate-900">{TEXT_CONTENT.nav.brand}</span>
+            </div>
+            <a href={TEXT_CONTENT.nav.githubUrl} className="text-slate-400 hover:text-slate-900 transition-colors">
+              <i className="fa-brands fa-github text-xl"></i>
+            </a>
+          </nav>
+
+          <main className="flex-grow flex flex-col items-center relative z-10 w-full">
+            <div className="text-center max-w-4xl mx-auto px-6 mt-4 mb-12">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50/50 border border-blue-100 rounded-full mb-6">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                <span className="text-xs font-bold text-blue-600 uppercase tracking-wide">{TEXT_CONTENT.hero.badge}</span>
+              </div>
+
+              <h1 className="text-6xl md:text-8xl font-extrabold tracking-tighter text-slate-900 mb-6 leading-[0.95]">
+                {TEXT_CONTENT.hero.headlinePrefix} <br />
+                <span className="gradient-text">{TEXT_CONTENT.hero.headlineGradient}</span>
+              </h1>
+
+              <p className="text-lg text-slate-500 font-medium max-w-xl mx-auto">
+                {TEXT_CONTENT.hero.subheadline}
+              </p>
+            </div>
+
+            <div className="w-full relative py-8">
+              <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-blue-50/20 to-transparent blur-3xl -z-10"></div>
+
+              <ReactRiyils
+                videos={videos}
+                currentIndex={currentIndex}
+                onVideoClick={() => {
+                  setShowViewer(true)
+                }}
+                onVideoChange={setCurrentIndex}
+                translations={carouselTranslations}
+                containerHeightDesktop={500}
+                containerHeightMobile={500}
+              />
+            </div>
+
+            <div className="mt-12 flex flex-col items-center gap-10">
+              <div className="flex gap-4">
+                <button className="px-8 py-3.5 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/10 flex items-center gap-2">
+                  {TEXT_CONTENT.hero.ctaPrimary}
+                </button>
+                <a href={TEXT_CONTENT.nav.githubUrl} className="px-8 py-3.5 bg-white text-slate-700 font-bold rounded-xl border border-slate-200 hover:bg-slate-50 transition-all flex items-center gap-2">
+                  <i className="fa-brands fa-github"></i>
+                  {TEXT_CONTENT.hero.ctaSecondary}
+                </a>
+              </div>
+
+              <div className="flex gap-12 pt-6 border-t border-slate-100">
+                {TEXT_CONTENT.stats.map((stat, i) => (
+                  <div key={i} className="text-center">
+                    <div className="text-2xl font-bold text-slate-900">{stat.val}</div>
+                    <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">{stat.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </main>
+
+          {showViewer && (
+            <div className="fixed inset-0 z-50">
+              <RiyilsViewer
+                videos={videos}
+                initialIndex={currentIndex}
+                onClose={() => setShowViewer(false)}
+                onVideoChange={setCurrentIndex}
+                translations={viewerTranslations}
+              />
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    const root = createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+
+</html>

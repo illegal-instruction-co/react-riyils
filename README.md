@@ -4,7 +4,7 @@
 
 # React Riyils
 
-Check out the live demo here: [Demo](https://illegal-instruction-co.github.io/react-riyils/demo.html)
+Check out the live demo here: [Demo](https://illegal-instruction-co.github.io/react-riyils/)
 
 
 React Riyils is a React component for building Instagram-style vertical video stories and reels. It helps you add mobile-friendly, touch-enabled video carousels and fullscreen viewers to your web projects with ease.

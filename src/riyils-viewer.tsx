@@ -296,6 +296,13 @@ export function RiyilsViewer({
     >
       <div className="react-riyils-viewer__gradient-top" />
 
+      <div className="react-riyils-viewer__progress-container">
+        <div
+          className="react-riyils-viewer__progress-fill"
+          style={{ width: `${progress}%`, background: progressBarColor }}
+        />
+      </div>
+
       <div className="react-riyils-viewer__close-container">
         <button
           type="button"
@@ -447,13 +454,6 @@ export function RiyilsViewer({
           >
             {isMuted ? <VolumeX size={24} /> : <Volume2 size={24} />}
           </button>
-        </div>
-
-        <div className="react-riyils-viewer__progress-container">
-          <div
-            className="react-riyils-viewer__progress-fill"
-            style={{ width: `${progress}%`, background: progressBarColor }}
-          />
         </div>
       </div>
 

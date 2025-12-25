@@ -37,6 +37,7 @@ jobs:
           cp demo.html public/
           cp -r dist/ public/dist/
           cp src/video-swiper.css public/index.css
+          cp -r assets/ public/assets/
 
       - name: Rename public to _site
         run: mv public _site
