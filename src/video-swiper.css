@@ -1,0 +1,733 @@
+.react-riyils .swiper-slide {
+  width: 100px !important;
+  opacity: 0.5 !important;
+  transition: opacity 0.8s cubic-bezier(0.25, 0.1, 0.25, 1), transform 0.8s cubic-bezier(0.25, 0.1, 0.25, 1), width 0.8s cubic-bezier(0.25, 0.1, 0.25, 1) !important;
+  overflow: visible !important;
+  height: auto !important;
+}
+
+.react-riyils .swiper-slide-active {
+  width: 220px !important;
+  opacity: 1 !important;
+}
+
+.react-riyils .swiper-wrapper {
+  transition-timing-function: cubic-bezier(0.25, 0.1, 0.25, 1) !important;
+}
+
+@media (min-width: 640px) {
+  .react-riyils .swiper-slide {
+    width: 160px !important;
+    opacity: 0.6 !important;
+  }
+
+  .react-riyils .swiper-slide-active {
+    width: 280px !important;
+    max-width: none !important;
+    opacity: 1 !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .react-riyils .swiper-slide {
+    width: 200px !important;
+    opacity: 0.65 !important;
+  }
+
+  .react-riyils .swiper-slide-active {
+    width: 340px !important;
+    opacity: 1 !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .react-riyils .swiper-slide {
+    width: 220px !important;
+    opacity: 0.7 !important;
+  }
+
+  .react-riyils .swiper-slide-active {
+    width: 380px !important;
+    opacity: 1 !important;
+  }
+}
+
+/* Slide Button */
+.react-riyils__slide-button {
+  position: relative;
+  height: 100%;
+  cursor: pointer;
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  width: 100%;
+  outline: none;
+}
+
+.react-riyils__slide-button--inactive {
+  opacity: 1;
+}
+
+/* Video Container */
+.react-riyils__video-container {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  height: 100%;
+  aspect-ratio: 9 / 16;
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 20px;
+  will-change: transform, box-shadow;
+}
+
+.react-riyils__video-container--active {
+  border-radius: 24px;
+  transform: scale(0.9);
+  box-shadow:
+    0 0 0 3px rgba(59, 130, 246, 0.5),
+    0 0 20px rgba(59, 130, 246, 0.3),
+    0 4px 12px -4px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+}
+
+.react-riyils__video-container--inactive {
+  border-radius: 18px;
+  transform: scale(0.75);
+  box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.15);
+}
+
+.react-riyils__video-container--inactive::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom,
+      rgba(0, 0, 0, 0.05),
+      rgba(0, 0, 0, 0.12));
+  z-index: 1;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+@media (min-width: 768px) {
+  .react-riyils__video-container--active {
+    border-radius: 28px;
+    transform: scale(0.9);
+    box-shadow:
+      0 0 0 4px rgba(59, 130, 246, 0.6),
+      0 0 30px rgba(59, 130, 246, 0.4),
+      0 6px 16px -6px rgba(0, 0, 0, 0.25);
+  }
+
+  .react-riyils__video-container--inactive {
+    border-radius: 22px;
+    transform: scale(0.72);
+    box-shadow: 0 5px 15px -5px rgba(0, 0, 0, 0.18);
+  }
+
+  .react-riyils__video-container--inactive:hover {
+    transform: scale(0.93);
+    box-shadow: 0 6px 18px -5px rgba(0, 0, 0, 0.2);
+  }
+
+  .react-riyils__video-container--inactive::before {
+    background: linear-gradient(to bottom,
+        rgba(0, 0, 0, 0.03),
+        rgba(0, 0, 0, 0.1));
+  }
+}
+
+/* Video Element */
+.react-riyils__video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 0.3s ease-out;
+}
+
+/* Loading Spinner */
+.react-riyils__loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.2);
+  z-index: 20;
+}
+
+.react-riyils__spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: react-riyils-spin 1s linear infinite;
+}
+
+@keyframes react-riyils-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Progress Bar */
+.react-riyils__progress-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  z-index: 20;
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(4px);
+}
+
+.react-riyils__progress {
+  width: 100%;
+  height: 100%;
+  appearance: none;
+  border: none;
+  background: transparent;
+}
+
+.react-riyils__progress::-webkit-progress-bar {
+  background: transparent;
+}
+
+.react-riyils__progress::-webkit-progress-value {
+  background: currentColor;
+  transition: width 0.15s linear;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.react-riyils__progress::-moz-progress-bar {
+  background: currentColor;
+  transition: width 0.15s linear;
+  box-shadow: 0 0 8px currentColor;
+}
+
+/* Overlay for Inactive */
+.react-riyils__overlay-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom,
+      rgba(0, 0, 0, 0.08) 0%,
+      rgba(0, 0, 0, 0.15) 50%,
+      rgba(0, 0, 0, 0.22) 100%);
+  z-index: 2;
+  transition: opacity 0.6s ease-out;
+}
+
+.react-riyils__overlay-blur {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.05);
+  z-index: 2;
+  transition: background 0.6s ease-out;
+}
+
+/* Bottom CTA */
+.react-riyils__cta-container {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top,
+      rgba(0, 0, 0, 0.95) 0%,
+      rgba(0, 0, 0, 0.75) 40%,
+      rgba(0, 0, 0, 0) 100%);
+  padding: 12px;
+  padding-top: 40px;
+  pointer-events: auto;
+  will-change: transform;
+  z-index: 10;
+  border-bottom-left-radius: inherit;
+  border-bottom-right-radius: inherit;
+}
+
+@media (min-width: 768px) {
+  .react-riyils__cta-container {
+    padding: 20px;
+    padding-top: 50px;
+  }
+}
+
+.react-riyils__cta-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  transform-origin: left center;
+}
+
+.react-riyils__cta-button:hover {
+  gap: 14px;
+  transform: translateX(2px);
+}
+
+@media (min-width: 768px) {
+  .react-riyils__cta-button {
+    gap: 12px;
+  }
+
+  .react-riyils__cta-button:hover {
+    gap: 18px;
+    transform: translateX(4px);
+  }
+}
+
+.react-riyils__cta-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.15) 0%,
+      rgba(255, 255, 255, 0.08) 100%);
+  backdrop-filter: blur(16px);
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.react-riyils__cta-badge:hover {
+  background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.22) 0%,
+      rgba(255, 255, 255, 0.12) 100%);
+  border-color: rgba(255, 255, 255, 0.35);
+  box-shadow:
+    0 6px 25px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+@media (min-width: 640px) {
+  .react-riyils__cta-badge {
+    gap: 8px;
+    padding: 8px 16px;
+  }
+}
+
+@media (min-width: 768px) {
+  .react-riyils__cta-badge {
+    gap: 10px;
+    padding: 10px 20px;
+  }
+}
+
+.react-riyils__cta-icon {
+  width: 10px;
+  height: 10px;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+@media (min-width: 640px) {
+  .react-riyils__cta-icon {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+@media (min-width: 768px) {
+  .react-riyils__cta-icon {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.react-riyils__cta-text {
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+@media (min-width: 640px) {
+  .react-riyils__cta-text {
+    font-size: 12px;
+  }
+}
+
+@media (min-width: 768px) {
+  .react-riyils__cta-text {
+    font-size: 14px;
+  }
+}
+
+/* Container */
+.react-riyils__container {
+  position: relative;
+  user-select: none;
+  overflow: visible;
+  padding: 60px 0;
+  cursor: pointer;
+}
+
+.react-riyils__container[data-height-mobile] {
+  height: calc(var(--container-height-mobile) * 1.08);
+}
+
+@media (min-width: 768px) {
+  .react-riyils__container {
+    padding: 70px 0;
+  }
+
+  .react-riyils__container[data-height-desktop] {
+    height: calc(var(--container-height-desktop) * 1.1);
+  }
+}
+
+/* RiyilsViewer Styles */
+.react-riyils-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: black;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  max-width: none;
+  max-height: none;
+  border: 0;
+}
+
+.react-riyils-viewer__section {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: black;
+}
+
+.react-riyils-viewer__interaction-area {
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  cursor: default;
+}
+
+.react-riyils-viewer__video {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  user-select: none;
+}
+
+.react-riyils-viewer__loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.react-riyils-viewer__loading-spinner {
+  width: 64px;
+  height: 64px;
+  border: 4px solid rgba(255, 255, 255, 0.2);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: react-riyils-spin 1s linear infinite;
+}
+
+.react-riyils-viewer__pause-indicator {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.react-riyils-viewer__pause-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.react-riyils-viewer__pause-bars {
+  width: 20px;
+  height: 40px;
+  border-left: 12px solid transparent;
+  border-right: 12px solid transparent;
+  border-left-color: transparent;
+  border-right-color: transparent;
+}
+
+.react-riyils-viewer__speed-indicator {
+  position: absolute;
+  top: 50%;
+  right: 32px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.react-riyils-viewer__speed-badge {
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  padding: 8px 16px;
+  border-radius: 9999px;
+}
+
+.react-riyils-viewer__speed-text {
+  color: white;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.react-riyils-viewer__overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+}
+
+.react-riyils-viewer__header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  pointer-events: auto;
+  z-index: 50;
+}
+
+.react-riyils-viewer__header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+}
+
+.react-riyils-viewer__progress-wrapper {
+  flex: 1;
+  padding-right: 16px;
+}
+
+.react-riyils-viewer__progress-track {
+  height: 2px;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.react-riyils-viewer__progress-bar {
+  height: 100%;
+  transition: all 0.1s linear;
+}
+
+.react-riyils-viewer__close-button {
+  padding: 8px;
+  color: white;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 9999px;
+  transition: background 0.3s;
+  backdrop-filter: blur(4px);
+  flex-shrink: 0;
+  border: 0;
+  cursor: pointer;
+}
+
+.react-riyils-viewer__close-button:hover {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.react-riyils-viewer__close-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.react-riyils-viewer__swipe-tip {
+  position: absolute;
+  bottom: 96px;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 40;
+}
+
+.react-riyils-viewer__swipe-tip-content {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
+  padding: 12px 24px;
+  border-radius: 9999px;
+}
+
+.react-riyils-viewer__swipe-tip-text {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.react-riyils-viewer__swipe-tip-icon-wrapper {
+  position: relative;
+  width: 32px;
+  height: 32px;
+}
+
+.react-riyils-viewer__swipe-tip-icon {
+  width: 32px;
+  height: 32px;
+  position: absolute;
+  animation: react-riyils-bounce 1.5s infinite;
+}
+
+.react-riyils-viewer__swipe-tip-icon--1 {
+  color: rgba(255, 255, 255, 0.9);
+  animation-delay: 0ms;
+}
+
+.react-riyils-viewer__swipe-tip-icon--2 {
+  color: rgba(255, 255, 255, 0.5);
+  animation-delay: 200ms;
+  top: 8px;
+}
+
+.react-riyils-viewer__swipe-tip-icon--3 {
+  color: rgba(255, 255, 255, 0.2);
+  animation-delay: 400ms;
+  top: 16px;
+}
+
+@keyframes react-riyils-bounce {
+
+  0%,
+  100% {
+    transform: translateY(-25%);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+
+  50% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
+.react-riyils-viewer__mute-button-wrapper {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  pointer-events: auto;
+  z-index: 50;
+}
+
+.react-riyils-viewer__mute-button {
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+  color: #ffffff;
+  transition: background 0.3s;
+  backdrop-filter: blur(4px);
+  border: 0;
+  cursor: pointer;
+}
+
+.react-riyils-viewer__mute-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.react-riyils-viewer__mute-icon {
+  width: 24px;
+  height: 24px;
+}
+
+@media (min-width: 640px) {
+  .react-riyils .swiper-slide {
+    width: 140px !important;
+    opacity: 0.65 !important;
+  }
+
+  .react-riyils .swiper-slide-active {
+    width: 240px !important;
+    max-width: none !important;
+    opacity: 1 !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .react-riyils .swiper-slide {
+    width: 190px !important;
+    opacity: 0.7 !important;
+  }
+
+  .react-riyils .swiper-slide-active {
+    width: 260px !important;
+    opacity: 1 !important;
+  }
+}
+
+.react-riyils .swiper-button-prev,
+.react-riyils .swiper-button-next {
+  display: none !important;
+}
+
+@media (min-width: 768px) {
+
+  .react-riyils .swiper-button-prev,
+  .react-riyils .swiper-button-next {
+    display: flex !important;
+    width: 48px !important;
+    height: 48px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: linear-gradient(to bottom right, white, white, rgb(249 250 251)) !important;
+    border-radius: 9999px !important;
+    box-shadow: 0 8px 30px rgb(0 0 0 / 0.12) !important;
+    transition: all 0.5s !important;
+    border: 1px solid rgb(229 231 235 / 0.6) !important;
+    backdrop-filter: blur(24px) !important;
+  }
+
+  .react-riyils .swiper-button-prev:hover,
+  .react-riyils .swiper-button-next:hover {
+    background: linear-gradient(to bottom right, white, white) !important;
+    box-shadow: 0 20px 40px rgb(0 0 0 / 0.18) !important;
+    transform: scale(1.1) !important;
+  }
+
+  .react-riyils .swiper-button-prev::after,
+  .react-riyils .swiper-button-next::after {
+    font-size: 24px !important;
+    font-weight: 800 !important;
+    color: rgb(55 65 81) !important;
+  }
+
+  .react-riyils .swiper-button-prev {
+    left: 24px !important;
+  }
+
+  .react-riyils .swiper-button-next {
+    right: 24px !important;
+  }
+}

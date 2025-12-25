@@ -1,0 +1,10 @@
+src/
+*.tsx
+*.ts
+!dist/
+tsconfig.json
+rollup.config.js
+.git/
+.gitignore
+node_modules/
+*.tsbuildinfo

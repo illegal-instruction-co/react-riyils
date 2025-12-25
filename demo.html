@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>React Riyils Demo</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+  <link rel="stylesheet" href="dist/index.css">
+  <script src="dist/index.umd.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    #root {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>React Riyils Demo</h1>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+    const { createRoot } = ReactDOM;
+    const { ReactRiyils, RiyilsViewer } = window.ReactRiyils || {};
+
+    const demoVideos = [
+      { id: '1', videoUrl: 'https://v.ftcdn.net/05/51/47/31/700_F_551473197_jkNPldIqNNR4RlhguG3y2OmBVJgs8TW3_ST.mp4' },
+      { id: '2', videoUrl: 'https://v.ftcdn.net/07/60/81/17/700_F_760811711_NFbuTtpXG6i19fkvuPcKx43mN1hznjTq_ST.mp4' },
+      { id: '3', videoUrl: 'https://v.ftcdn.net/04/06/93/18/700_F_406931852_Fe4N4yRZpatDXUwjGR2S7yJOHRRsgPbl_ST.mp4' },
+    ];
+
+    function App() {
+      const [videos, setVideos] = useState(demoVideos);
+      const [currentIndex, setCurrentIndex] = useState(0);
+      const [showViewer, setShowViewer] = useState(false);
+
+      const WINDOW_SIZE = 15;
+
+      useEffect(() => {
+        if (currentIndex >= videos.length - 3) {
+          setVideos(prev => {
+            const newVideos = demoVideos.map((v, i) => ({
+              ...v,
+              id: `${prev.length + i + 1}`
+            }));
+            const updated = [...prev, ...newVideos];
+
+            if (updated.length > WINDOW_SIZE) {
+              const removeCount = updated.length - WINDOW_SIZE;
+              return updated.slice(removeCount);
+            }
+            return updated;
+          });
+        }
+      }, [currentIndex, videos.length]);
+
+      return (
+        <>
+          <ReactRiyils
+            videos={videos}
+            currentIndex={currentIndex}
+            onVideoClick={() => setShowViewer(true)}
+            onVideoChange={setCurrentIndex}
+            containerHeightMobile={450}
+            containerHeightDesktop={600}
+          />
+
+          {showViewer && (
+            <RiyilsViewer
+              videos={videos}
+              initialIndex={currentIndex}
+              onClose={() => setShowViewer(false)}
+              onVideoChange={setCurrentIndex}
+            />
+          )}
+        </>
+      );
+    }
+
+    createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+
+</html>
