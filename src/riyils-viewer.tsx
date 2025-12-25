@@ -13,6 +13,7 @@ import {
   ChevronsUp,
   Zap
 } from 'lucide-react';
+import { useVideoSource } from './use-video-source';
 
 import 'swiper/css';
 import 'swiper/css/virtual';
@@ -102,6 +103,9 @@ export function RiyilsViewer({
   const doubleTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastTapTime = useRef<number>(0);
   const longPressTriggered = useRef<boolean>(false);
+
+  const activeVideoData = videos[currentIndex];
+  useVideoSource(activeVideoRef, activeVideoData?.videoUrl, true);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -396,7 +400,6 @@ export function RiyilsViewer({
 
                 <video
                   ref={activeVideoRef}
-                  src={video.videoUrl}
                   className="react-riyils-viewer__video"
                   playsInline
                   loop

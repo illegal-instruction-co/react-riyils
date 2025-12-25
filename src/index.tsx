@@ -3,6 +3,7 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { Keyboard, Mousewheel, EffectCoverflow, Virtual } from 'swiper/modules';
 import type { Swiper as SwiperType } from 'swiper';
 import { Play } from 'lucide-react';
+import { useVideoSource } from './use-video-source';
 
 import {
   type Video,
@@ -55,6 +56,8 @@ const SlideItem = React.memo(({
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  useVideoSource(videoRef, video.videoUrl, shouldLoad);
+
   useEffect(() => {
     const el = videoRef.current;
     if (!el) return;
@@ -93,7 +96,6 @@ const SlideItem = React.memo(({
       <div className={`react-riyils__card ${isVisualActive ? 'active' : ''}`}>
         <video
           ref={videoRef}
-          src={shouldLoad ? video.videoUrl : undefined}
           muted
           playsInline
           loop={isVisualActive}
