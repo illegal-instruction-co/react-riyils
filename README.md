@@ -141,6 +141,7 @@ You can pass either a string or a quality object.
 | onClose | function | Triggered on close |
 | onVideoChange | function | Triggered when active video changes |
 | translations | object | Optional custom UI text |
+| enableAutoAdvance | boolean | Enable auto-advance to next video when current ends (default: false)
 
 ---
 

@@ -47,6 +47,7 @@ export interface RiyilsViewerProps {
   readonly onVideoChange?: (index: number) => void;
   readonly translations?: Partial<RiyilsTranslations>;
   readonly progressBarColor?: string;
+  readonly enableAutoAdvance?: boolean;
 }
 
 const DOUBLE_TAP_DELAY = 300;
@@ -78,6 +79,7 @@ export function RiyilsViewer({
   onVideoChange,
   translations = {},
   progressBarColor = '#fff',
+  enableAutoAdvance = false,
 }: Readonly<RiyilsViewerProps>) {
   useLockBodyScroll();
 
@@ -171,6 +173,19 @@ export function RiyilsViewer({
       setProgress((vid.currentTime / vid.duration) * 100);
     }
   }, []);
+
+  const handleVideoEnded = useCallback(() => {
+    if (enableAutoAdvance && swiperRef.current) {
+      if (swiperRef.current.isEnd) {
+        if (activeVideoRef.current) {
+          activeVideoRef.current.currentTime = 0;
+          activeVideoRef.current.play().catch(() => { });
+        }
+      } else {
+        swiperRef.current.slideNext();
+      }
+    }
+  }, [enableAutoAdvance]);
 
   const handleTouchStart = useCallback(() => {
     longPressTriggered.current = false;
@@ -402,11 +417,12 @@ export function RiyilsViewer({
                   ref={activeVideoRef}
                   className="react-riyils-viewer__video"
                   playsInline
-                  loop
+                  loop={!enableAutoAdvance}
                   muted={isMuted}
                   autoPlay
                   poster={video.thumbnailUrl}
                   onTimeUpdate={handleTimeUpdate}
+                  onEnded={handleVideoEnded}
                   onContextMenu={preventDefaultMenu}
                   disablePictureInPicture
                   disableRemotePlayback
