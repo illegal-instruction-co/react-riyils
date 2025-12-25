@@ -129,6 +129,7 @@ You can pass either a string or a quality object.
 | translations | object | Optional custom UI text |
 | containerHeightMobile | number | Optional mobile height (px) |
 | containerHeightDesktop | number | Optional desktop height (px) |
+ | enableAutoAdvance | boolean | Enable auto-advance to next video when current ends (default: false) |
 
 ---
 

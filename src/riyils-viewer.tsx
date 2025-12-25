@@ -11,7 +11,9 @@ import {
   ChevronsRight,
   ChevronsLeft,
   ChevronsUp,
-  Zap
+  Zap,
+  AlertCircle,
+  RotateCcw
 } from 'lucide-react';
 import { useVideoSource, type VideoQualityVariants } from './use-video-source';
 
@@ -96,6 +98,7 @@ export function RiyilsViewer({
   const [seekFeedback, setSeekFeedback] = useState<'forward' | 'rewind' | null>(null);
   const [showPlayPauseIcon, setShowPlayPauseIcon] = useState(false);
   const [showScrollHint, setShowScrollHint] = useState(false);
+  const [hasError, setHasError] = useState(false);
 
   const swiperRef = useRef<SwiperType | null>(null);
   const activeVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -126,19 +129,26 @@ export function RiyilsViewer({
 
   useEffect(() => {
     const video = activeVideoRef.current;
-    if (!video) return;
+    if (!video || hasError) return;
 
     if (isPlaying) {
       const playPromise = video.play();
+
       if (playPromise !== undefined) {
-        playPromise.catch(() => {
-          setIsPlaying(false);
+        playPromise.catch((error) => {
+          if (error.name === 'NotAllowedError') {
+            video.muted = true;
+            setIsMuted(true);
+            video.play().catch(() => setIsPlaying(false));
+          } else {
+            setIsPlaying(false);
+          }
         });
       }
     } else {
       video.pause();
     }
-  }, [currentIndex, isPlaying]);
+  }, [currentIndex, isPlaying, hasError]);
 
   useEffect(() => {
     const video = activeVideoRef.current;
@@ -167,6 +177,20 @@ export function RiyilsViewer({
     }
   }, [videos.length]);
 
+  const handleVideoError = useCallback(() => {
+    setHasError(true);
+    setIsPlaying(false);
+  }, []);
+
+  const handleRetry = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    e.stopPropagation();
+    setHasError(false);
+    setIsPlaying(true);
+    if (activeVideoRef.current) {
+      activeVideoRef.current.load();
+    }
+  }, []);
+
   const handleTimeUpdate = useCallback((e: React.SyntheticEvent<HTMLVideoElement>) => {
     const vid = e.currentTarget;
     if (vid.duration) {
@@ -188,12 +212,13 @@ export function RiyilsViewer({
   }, [enableAutoAdvance]);
 
   const handleTouchStart = useCallback(() => {
+    if (hasError) return;
     longPressTriggered.current = false;
     longPressTimer.current = setTimeout(() => {
       setIsSpeedUp(true);
       longPressTriggered.current = true;
     }, LONG_PRESS_DELAY);
-  }, []);
+  }, [hasError]);
 
   const handleTouchEnd = useCallback(() => {
     if (longPressTimer.current) {
@@ -204,26 +229,29 @@ export function RiyilsViewer({
 
   const handleSeek = useCallback((seconds: number) => {
     const video = activeVideoRef.current;
-    if (!video) return;
+    if (!video || hasError) return;
 
     video.currentTime = Math.min(Math.max(video.currentTime + seconds, 0), video.duration);
 
     setSeekFeedback(seconds > 0 ? 'forward' : 'rewind');
     setTimeout(() => setSeekFeedback(null), ANIMATION_DURATION);
-  }, []);
+  }, [hasError]);
 
   const togglePlay = useCallback(() => {
+    if (hasError) return;
     setIsPlaying(prev => {
       const newState = !prev;
       setShowPlayPauseIcon(true);
       setTimeout(() => setShowPlayPauseIcon(false), ANIMATION_DURATION);
       return newState;
     });
-  }, []);
+  }, [hasError]);
 
   const handleZoneClick = useCallback((zone: 'left' | 'center' | 'right', e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (hasError) return;
 
     if (longPressTriggered.current) {
       longPressTriggered.current = false;
@@ -254,7 +282,7 @@ export function RiyilsViewer({
         lastTapTime.current = 0;
       }, DOUBLE_TAP_DELAY);
     }
-  }, [handleSeek, togglePlay]);
+  }, [handleSeek, togglePlay, hasError]);
 
   const handleMuteToggle = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -293,6 +321,7 @@ export function RiyilsViewer({
 
   const handleSlideChange = useCallback((s: SwiperType) => {
     setCurrentIndex(s.activeIndex);
+    setHasError(false);
     setProgress(0);
     setIsPlaying(true);
     setSeekFeedback(null);
@@ -351,6 +380,21 @@ export function RiyilsViewer({
           <SwiperSlide key={video.id} virtualIndex={index} className="react-riyils-viewer__slide">
             {index === currentIndex ? (
               <>
+                {hasError && (
+                  <div className="react-riyils-viewer__error-overlay">
+                    <div className="react-riyils-viewer__error-icon-box">
+                      <AlertCircle size={48} className="react-riyils-viewer__error-icon" />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleRetry}
+                      className="react-riyils-viewer__retry-btn"
+                    >
+                      <RotateCcw size={32} />
+                    </button>
+                  </div>
+                )}
+
                 <fieldset
                   className="react-riyils-viewer__gesture-grid"
                   onContextMenu={preventDefaultMenu}
@@ -362,6 +406,7 @@ export function RiyilsViewer({
                     className="react-riyils-viewer__gesture-zone"
                     onClick={(e) => handleZoneClick('left', e)}
                     aria-label={t.rewind}
+                    disabled={hasError}
                   />
 
                   <button
@@ -369,6 +414,7 @@ export function RiyilsViewer({
                     className="react-riyils-viewer__gesture-zone"
                     onClick={(e) => handleZoneClick('center', e)}
                     aria-label={isPlaying ? 'Pause' : 'Play'}
+                    disabled={hasError}
                   />
 
                   <button
@@ -380,37 +426,42 @@ export function RiyilsViewer({
                     onMouseDown={handleTouchStart}
                     onMouseUp={handleTouchEnd}
                     aria-label={t.forward}
+                    disabled={hasError}
                   />
                 </fieldset>
 
-                <div className={`react-riyils-viewer__feedback-speed ${isSpeedUp ? 'visible' : ''}`}>
-                  <Zap size={16} fill="currentColor" className="text-yellow-400" />
-                  <span>{t.speedIndicator}</span>
-                </div>
-
-                {!isPlaying && (
-                  <div className="react-riyils-viewer__feedback-center">
-                    <div className="react-riyils-viewer__feedback-icon animate-in">
-                      <Play size={32} fill="white" />
+                {!hasError && (
+                  <>
+                    <div className={`react-riyils-viewer__feedback-speed ${isSpeedUp ? 'visible' : ''}`}>
+                      <Zap size={16} fill="currentColor" className="text-yellow-400" />
+                      <span>{t.speedIndicator}</span>
                     </div>
-                  </div>
-                )}
 
-                {isPlaying && showPlayPauseIcon && (
-                  <div className="react-riyils-viewer__feedback-center">
-                    <div className="react-riyils-viewer__feedback-icon animate-out">
-                      <Pause size={32} fill="white" />
-                    </div>
-                  </div>
-                )}
+                    {!isPlaying && (
+                      <div className="react-riyils-viewer__feedback-center">
+                        <div className="react-riyils-viewer__feedback-icon animate-in">
+                          <Play size={32} fill="white" />
+                        </div>
+                      </div>
+                    )}
 
-                {seekFeedback && (
-                  <div className={`react-riyils-viewer__feedback-seek ${seekFeedback === 'forward' ? 'right' : 'left'}`}>
-                    <div className="react-riyils-viewer__seek-circle">
-                      {seekFeedback === 'forward' ? <ChevronsRight size={32} /> : <ChevronsLeft size={32} />}
-                      <span className="react-riyils-viewer__seek-text">10s</span>
-                    </div>
-                  </div>
+                    {isPlaying && showPlayPauseIcon && (
+                      <div className="react-riyils-viewer__feedback-center">
+                        <div className="react-riyils-viewer__feedback-icon animate-out">
+                          <Pause size={32} fill="white" />
+                        </div>
+                      </div>
+                    )}
+
+                    {seekFeedback && (
+                      <div className={`react-riyils-viewer__feedback-seek ${seekFeedback === 'forward' ? 'right' : 'left'}`}>
+                        <div className="react-riyils-viewer__seek-circle">
+                          {seekFeedback === 'forward' ? <ChevronsRight size={32} /> : <ChevronsLeft size={32} />}
+                          <span className="react-riyils-viewer__seek-text">10s</span>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 <video
@@ -423,6 +474,7 @@ export function RiyilsViewer({
                   poster={video.thumbnailUrl}
                   onTimeUpdate={handleTimeUpdate}
                   onEnded={handleVideoEnded}
+                  onError={handleVideoError}
                   onContextMenu={preventDefaultMenu}
                   disablePictureInPicture
                   disableRemotePlayback
