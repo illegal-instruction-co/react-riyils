@@ -28,6 +28,16 @@ It goes beyond simple playback by offering **Smart Quality Selection** and **HLS
 
 ---
 
+## Who is this for?
+
+React Riyils is designed for:
+- Media-heavy SaaS applications
+- Education platforms
+- Content & video-based products
+- Mid-scale web projects that need production-ready video playback
+
+It is NOT intended to replace native video SDKs or DRM-based streaming solutions.
+
 ## Installation
 
 ```bash
@@ -155,6 +165,16 @@ You can pass either a string or a quality object.
   Override CSS classes such as `.react-riyils__slide-button` for custom designs
 
 ---
+
+## Playback Behavior
+
+- Autoplay attempts with muted fallback
+- Automatic quality selection before playback
+- Graceful recovery from buffering and network stalls
+- Safe unmounting and cleanup on slide changes
+
+## Observability & Playback Metrics
+Planned metrics include play failures, first frame timing, and stall/recover events.
 
 ## License
 
