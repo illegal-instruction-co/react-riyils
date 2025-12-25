@@ -2,7 +2,7 @@
 
 **The most performant React component for Instagram-like reels, stories, and vertical video feeds.**
 
-Check out the live demo here: **Demo**
+Check out the live demo here: [**Demo**](https://illegal-instruction-co.github.io/react-riyils)
 
 React Riyils helps you add mobile-friendly, touch-enabled video carousels and fullscreen viewers to your web projects.
 It goes beyond simple playback by offering **Smart Quality Selection** and **HLS Support** out of the box.
