@@ -13,9 +13,9 @@ import {
   ChevronsUp,
   Zap,
   AlertCircle,
-  RotateCcw
+  RotateCcw,
 } from 'lucide-react';
-import { useVideoSource, type VideoQualityVariants } from './use-video-source';
+import { videoSourceManager, type VideoQualityVariants } from './use-video-source';
 
 import 'swiper/css';
 import 'swiper/css/virtual';
@@ -52,26 +52,41 @@ export interface RiyilsViewerProps {
   readonly enableAutoAdvance?: boolean;
 }
 
-const DOUBLE_TAP_DELAY = 300;
-const LONG_PRESS_DELAY = 500;
-const SEEK_TIME = 10;
-const ANIMATION_DURATION = 600;
-const SCROLL_HINT_DURATION = 1000;
+const DOUBLE_TAP_DELAY_MS = 300;
+const LONG_PRESS_DELAY_MS = 500;
+const SEEK_SECONDS = 10;
+const FEEDBACK_ANIMATION_MS = 600;
+const SCROLL_HINT_MS = 1000;
 
-function useLockBodyScroll() {
+type SeekFeedback = 'forward' | 'rewind' | null;
+
+function useLockBodyScroll(): void {
   useEffect(() => {
-    const body = globalThis.document.body;
-    const originalStyle = globalThis.getComputedStyle(body).overflow;
+    const body = document.body;
+    const originalOverflow = globalThis.window.getComputedStyle(body).overflow;
     const originalOverscroll = body.style.overscrollBehavior;
 
     body.style.overflow = 'hidden';
     body.style.overscrollBehavior = 'none';
 
     return () => {
-      body.style.overflow = originalStyle;
+      body.style.overflow = originalOverflow;
       body.style.overscrollBehavior = originalOverscroll;
     };
   }, []);
+}
+
+function isTextInput(target: EventTarget | null): boolean {
+  if (!target) return false;
+  return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}
+
+function shouldKeepMounted(index: number, activeIndex: number): boolean {
+  return index === activeIndex || index === activeIndex - 1 || index === activeIndex + 1;
 }
 
 export function RiyilsViewer({
@@ -85,32 +100,54 @@ export function RiyilsViewer({
 }: Readonly<RiyilsViewerProps>) {
   useLockBodyScroll();
 
-  const t = useMemo(() => ({
-    ...defaultRiyilsTranslations,
-    ...translations
-  }), [translations]);
+  const t = useMemo(
+    () => ({
+      ...defaultRiyilsTranslations,
+      ...translations,
+    }),
+    [translations]
+  );
 
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [isMuted, setIsMuted] = useState(true);
   const [progress, setProgress] = useState(0);
   const [isSpeedUp, setIsSpeedUp] = useState(false);
   const [isPlaying, setIsPlaying] = useState(true);
-  const [seekFeedback, setSeekFeedback] = useState<'forward' | 'rewind' | null>(null);
+  const [seekFeedback, setSeekFeedback] = useState<SeekFeedback>(null);
   const [showPlayPauseIcon, setShowPlayPauseIcon] = useState(false);
   const [showScrollHint, setShowScrollHint] = useState(false);
   const [hasError, setHasError] = useState(false);
 
   const swiperRef = useRef<SwiperType | null>(null);
-  const activeVideoRef = useRef<HTMLVideoElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const doubleTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const videoRefs = useRef<Map<number, HTMLVideoElement>>(new Map());
+  const longPressTimer = useRef<number | null>(null);
+  const doubleTapTimer = useRef<number | null>(null);
   const lastTapTime = useRef<number>(0);
   const longPressTriggered = useRef<boolean>(false);
+  const feedbackTimer = useRef<number | null>(null);
+  const scrollHintTimer = useRef<number | null>(null);
 
   const activeVideoData = videos[currentIndex];
-  useVideoSource(activeVideoRef, activeVideoData?.videoUrl, true);
+
+  const preloadAround = useCallback(
+    (index: number) => {
+      if (index < 0 || index >= videos.length) return;
+      videoSourceManager.preload(index, videos[index]?.videoUrl);
+      if (index - 1 >= 0) videoSourceManager.preload(index - 1, videos[index - 1]?.videoUrl);
+      if (index + 1 < videos.length) videoSourceManager.preload(index + 1, videos[index + 1]?.videoUrl);
+    },
+    [videos]
+  );
+
+  useEffect(() => {
+    preloadAround(initialIndex);
+  }, [initialIndex, preloadAround]);
+
+  useEffect(() => {
+    preloadAround(currentIndex);
+  }, [currentIndex, preloadAround]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -127,44 +164,98 @@ export function RiyilsViewer({
     };
   }, []);
 
-  useEffect(() => {
-    const video = activeVideoRef.current;
+  const getVideoEl = useCallback((index: number): HTMLVideoElement | null => {
+    return videoRefs.current.get(index) ?? null;
+  }, []);
+
+  const pauseVideo = useCallback((video: HTMLVideoElement | null) => {
+    if (!video) return;
+    video.pause();
+  }, []);
+
+  const safePlay = useCallback((video: HTMLVideoElement | null, onNotAllowed: () => void) => {
+    if (!video) return;
+    video.play().catch((error: unknown) => {
+      const err = error as { name?: string };
+      if (err?.name === 'NotAllowedError') {
+        onNotAllowed();
+      }
+    });
+  }, []);
+
+  const applyActivePlaybackState = useCallback(() => {
+    const video = getVideoEl(currentIndex);
     if (!video || hasError) return;
 
-    if (isPlaying) {
-      const playPromise = video.play();
+    video.muted = isMuted;
+    video.playbackRate = isSpeedUp ? 2 : 1;
 
-      if (playPromise !== undefined) {
-        playPromise.catch((error) => {
-          if (error.name === 'NotAllowedError') {
-            video.muted = true;
-            setIsMuted(true);
-            video.play().catch(() => setIsPlaying(false));
-          } else {
-            setIsPlaying(false);
-          }
-        });
-      }
+    if (isPlaying) {
+      safePlay(video, () => {
+        video.muted = true;
+        setIsMuted(true);
+        safePlay(video, () => setIsPlaying(false));
+      });
     } else {
-      video.pause();
+      pauseVideo(video);
     }
-  }, [currentIndex, isPlaying, hasError]);
+  }, [currentIndex, getVideoEl, hasError, isMuted, isSpeedUp, isPlaying, pauseVideo, safePlay]);
 
   useEffect(() => {
-    const video = activeVideoRef.current;
-    if (video) {
-      video.muted = isMuted;
-      video.playbackRate = isSpeedUp ? 2 : 1;
+    applyActivePlaybackState();
+  }, [applyActivePlaybackState]);
+
+  const stopAllExcept = useCallback(
+    (active: number) => {
+      videoRefs.current.forEach((video, index) => {
+        if (index !== active) {
+          video.pause();
+        }
+      });
+    },
+    []
+  );
+
+  const resetForNewActive = useCallback(() => {
+    setHasError(false);
+    setProgress(0);
+    setIsPlaying(true);
+    setSeekFeedback(null);
+    setIsSpeedUp(false);
+    longPressTriggered.current = false;
+
+    if (longPressTimer.current) {
+      globalThis.window.clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
     }
-  }, [isMuted, isSpeedUp, currentIndex]);
+
+    if (doubleTapTimer.current) {
+      globalThis.window.clearTimeout(doubleTapTimer.current);
+      doubleTapTimer.current = null;
+    }
+
+    if (feedbackTimer.current) {
+      globalThis.window.clearTimeout(feedbackTimer.current);
+      feedbackTimer.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     setShowScrollHint(true);
-    const timer = setTimeout(() => {
+    if (scrollHintTimer.current) {
+      globalThis.window.clearTimeout(scrollHintTimer.current);
+    }
+    scrollHintTimer.current = globalThis.window.setTimeout(() => {
       setShowScrollHint(false);
-    }, SCROLL_HINT_DURATION);
+      scrollHintTimer.current = null;
+    }, SCROLL_HINT_MS);
 
-    return () => clearTimeout(timer);
+    return () => {
+      if (scrollHintTimer.current) {
+        globalThis.window.clearTimeout(scrollHintTimer.current);
+        scrollHintTimer.current = null;
+      }
+    };
   }, [currentIndex]);
 
   useEffect(() => {
@@ -182,159 +273,405 @@ export function RiyilsViewer({
     setIsPlaying(false);
   }, []);
 
-  const handleRetry = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-    e.stopPropagation();
-    setHasError(false);
-    setIsPlaying(true);
-    if (activeVideoRef.current) {
-      activeVideoRef.current.load();
-    }
-  }, []);
+  const handleRetry = useCallback(
+    (e: React.MouseEvent | React.TouchEvent) => {
+      e.stopPropagation();
+      setHasError(false);
+      setIsPlaying(true);
+
+      const video = getVideoEl(currentIndex);
+      if (!video) return;
+
+      videoSourceManager.reset(currentIndex);
+      videoSourceManager.preload(currentIndex, activeVideoData?.videoUrl);
+      videoSourceManager.attach(video, currentIndex, activeVideoData?.videoUrl);
+
+      video.load();
+      safePlay(video, () => {
+        video.muted = true;
+        setIsMuted(true);
+        safePlay(video, () => setIsPlaying(false));
+      });
+    },
+    [activeVideoData?.videoUrl, currentIndex, getVideoEl, safePlay]
+  );
 
   const handleTimeUpdate = useCallback((e: React.SyntheticEvent<HTMLVideoElement>) => {
     const vid = e.currentTarget;
-    if (vid.duration) {
+    if (vid.duration > 0) {
       setProgress((vid.currentTime / vid.duration) * 100);
     }
   }, []);
 
   const handleVideoEnded = useCallback(() => {
-    if (enableAutoAdvance && swiperRef.current) {
-      if (swiperRef.current.isEnd) {
-        if (activeVideoRef.current) {
-          activeVideoRef.current.currentTime = 0;
-          activeVideoRef.current.play().catch(() => { });
-        }
-      } else {
-        swiperRef.current.slideNext();
-      }
-    }
-  }, [enableAutoAdvance]);
+    if (!enableAutoAdvance) return;
 
-  const handleTouchStart = useCallback(() => {
+    const swiper = swiperRef.current;
+    const activeVideo = getVideoEl(currentIndex);
+
+    if (!swiper || !activeVideo) return;
+
+    if (swiper.isEnd) {
+      activeVideo.currentTime = 0;
+      safePlay(activeVideo, () => { });
+      return;
+    }
+
+    swiper.slideNext();
+  }, [currentIndex, enableAutoAdvance, getVideoEl, safePlay]);
+
+  const startSpeedUpTimer = useCallback(() => {
     if (hasError) return;
     longPressTriggered.current = false;
-    longPressTimer.current = setTimeout(() => {
+
+    if (longPressTimer.current) {
+      globalThis.window.clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+
+    longPressTimer.current = globalThis.window.setTimeout(() => {
       setIsSpeedUp(true);
       longPressTriggered.current = true;
-    }, LONG_PRESS_DELAY);
+      longPressTimer.current = null;
+    }, LONG_PRESS_DELAY_MS);
   }, [hasError]);
 
-  const handleTouchEnd = useCallback(() => {
+  const stopSpeedUpTimer = useCallback(() => {
     if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
+      globalThis.window.clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
     }
     setIsSpeedUp(false);
   }, []);
 
-  const handleSeek = useCallback((seconds: number) => {
-    const video = activeVideoRef.current;
-    if (!video || hasError) return;
-
-    video.currentTime = Math.min(Math.max(video.currentTime + seconds, 0), video.duration);
-
-    setSeekFeedback(seconds > 0 ? 'forward' : 'rewind');
-    setTimeout(() => setSeekFeedback(null), ANIMATION_DURATION);
-  }, [hasError]);
+  const showFeedbackOnce = useCallback((setter: (v: boolean) => void) => {
+    setter(true);
+    if (feedbackTimer.current) {
+      globalThis.window.clearTimeout(feedbackTimer.current);
+    }
+    feedbackTimer.current = globalThis.window.setTimeout(() => {
+      setter(false);
+      feedbackTimer.current = null;
+    }, FEEDBACK_ANIMATION_MS);
+  }, []);
 
   const togglePlay = useCallback(() => {
     if (hasError) return;
-    setIsPlaying(prev => {
-      const newState = !prev;
-      setShowPlayPauseIcon(true);
-      setTimeout(() => setShowPlayPauseIcon(false), ANIMATION_DURATION);
-      return newState;
+
+    setIsPlaying((prev) => {
+      const next = !prev;
+      showFeedbackOnce(setShowPlayPauseIcon);
+      return next;
     });
-  }, [hasError]);
+  }, [hasError, showFeedbackOnce]);
 
-  const handleZoneClick = useCallback((zone: 'left' | 'center' | 'right', e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleSeek = useCallback(
+    (seconds: number) => {
+      const video = getVideoEl(currentIndex);
+      if (!video || hasError) return;
 
-    if (hasError) return;
+      const nextTime = clamp(video.currentTime + seconds, 0, video.duration || Number.MAX_SAFE_INTEGER);
+      video.currentTime = nextTime;
 
-    if (longPressTriggered.current) {
-      longPressTriggered.current = false;
-      return;
-    }
+      setSeekFeedback(seconds > 0 ? 'forward' : 'rewind');
 
-    const now = Date.now();
-    const timeDiff = now - lastTapTime.current;
+      globalThis.window.setTimeout(() => {
+        setSeekFeedback(null);
+      }, FEEDBACK_ANIMATION_MS);
+    },
+    [currentIndex, getVideoEl, hasError]
+  );
 
-    if (timeDiff < DOUBLE_TAP_DELAY && timeDiff > 0) {
-      if (doubleTapTimer.current) {
-        clearTimeout(doubleTapTimer.current);
+  const handleZoneClick = useCallback(
+    (zone: 'left' | 'center' | 'right', e: React.MouseEvent | React.TouchEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (hasError) return;
+
+      if (longPressTriggered.current) {
+        longPressTriggered.current = false;
+        return;
       }
 
-      if (zone === 'right') {
-        handleSeek(SEEK_TIME);
-      } else if (zone === 'left') {
-        handleSeek(-SEEK_TIME);
-      } else {
-        togglePlay();
+      const now = Date.now();
+      const timeDiff = now - lastTapTime.current;
+
+      if (timeDiff > 0 && timeDiff < DOUBLE_TAP_DELAY_MS) {
+        if (doubleTapTimer.current) {
+          globalThis.window.clearTimeout(doubleTapTimer.current);
+          doubleTapTimer.current = null;
+        }
+
+        if (zone === 'right') {
+          handleSeek(SEEK_SECONDS);
+        } else if (zone === 'left') {
+          handleSeek(-SEEK_SECONDS);
+        } else {
+          togglePlay();
+        }
+
+        lastTapTime.current = 0;
+        return;
       }
 
-      lastTapTime.current = 0;
-    } else {
       lastTapTime.current = now;
-      doubleTapTimer.current = setTimeout(() => {
+
+      if (doubleTapTimer.current) {
+        globalThis.window.clearTimeout(doubleTapTimer.current);
+      }
+      doubleTapTimer.current = globalThis.window.setTimeout(() => {
         togglePlay();
         lastTapTime.current = 0;
-      }, DOUBLE_TAP_DELAY);
-    }
-  }, [handleSeek, togglePlay, hasError]);
+        doubleTapTimer.current = null;
+      }, DOUBLE_TAP_DELAY_MS);
+    },
+    [handleSeek, hasError, togglePlay]
+  );
 
   const handleMuteToggle = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsMuted(prev => !prev);
+    setIsMuted((prev) => !prev);
   }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+      if (isTextInput(e.target)) return;
+
+      if (e.code === 'Escape') {
+        e.preventDefault();
+        onClose();
         return;
       }
 
-      switch (e.code) {
-        case 'Escape':
-          e.preventDefault();
-          onClose();
-          break;
-        case 'Space':
-          e.preventDefault();
-          togglePlay();
-          break;
-        case 'KeyM':
-          e.preventDefault();
-          setIsMuted((prev) => !prev);
-          break;
-        default:
-          break;
+      if (e.code === 'Space') {
+        e.preventDefault();
+        togglePlay();
+        return;
+      }
+
+      if (e.code === 'KeyM') {
+        e.preventDefault();
+        setIsMuted((prev) => !prev);
       }
     };
 
-    globalThis.addEventListener('keydown', handleKeyDown);
+    globalThis.window.addEventListener('keydown', handleKeyDown);
     return () => {
-      globalThis.removeEventListener('keydown', handleKeyDown);
+      globalThis.window.removeEventListener('keydown', handleKeyDown);
     };
   }, [onClose, togglePlay]);
 
-  const handleSlideChange = useCallback((s: SwiperType) => {
-    setCurrentIndex(s.activeIndex);
-    setHasError(false);
-    setProgress(0);
-    setIsPlaying(true);
-    setSeekFeedback(null);
-    if (onVideoChange) {
-      onVideoChange(s.activeIndex);
-    }
-  }, [onVideoChange]);
+  const handleSlideChange = useCallback(
+    (s: SwiperType) => {
+      const nextIndex = s.activeIndex;
+      setCurrentIndex(nextIndex);
+      resetForNewActive();
+
+      stopAllExcept(nextIndex);
+      preloadAround(nextIndex);
+
+      if (onVideoChange) {
+        onVideoChange(nextIndex);
+      }
+
+      const nextVideo = getVideoEl(nextIndex);
+      if (nextVideo) {
+        nextVideo.currentTime = 0;
+      }
+    },
+    [getVideoEl, onVideoChange, preloadAround, resetForNewActive, stopAllExcept]
+  );
 
   const preventDefaultMenu = useCallback((e: React.SyntheticEvent) => {
     e.preventDefault();
     e.stopPropagation();
     return false;
   }, []);
+
+  const assignVideoRef = useCallback(
+    (index: number) => (el: HTMLVideoElement | null) => {
+      const prev = videoRefs.current.get(index);
+
+      if (prev && prev !== el) {
+        videoSourceManager.detach(index);
+        videoRefs.current.delete(index);
+      }
+
+      if (!el) {
+        if (prev) {
+          videoSourceManager.detach(index);
+          videoRefs.current.delete(index);
+        }
+        return;
+      }
+
+      videoRefs.current.set(index, el);
+      videoSourceManager.attach(el, index, videos[index]?.videoUrl);
+      el.muted = isMuted;
+      el.playbackRate = 1;
+    },
+    [isMuted, videos]
+  );
+
+  const activeAriaLabel = useMemo(() => {
+    const id = activeVideoData?.id ?? '';
+    return `Video ${id}`;
+  }, [activeVideoData?.id]);
+
+  type RenderSlideState = {
+    currentIndex: number;
+    hasError: boolean;
+    isMuted: boolean;
+    isPlaying: boolean;
+    isSpeedUp: boolean;
+    seekFeedback: SeekFeedback;
+    showPlayPauseIcon: boolean;
+    enableAutoAdvance: boolean;
+    activeAriaLabel?: string;
+  };
+
+  type RenderSlideHandlers = {
+    assignVideoRef: (index: number) => (el: HTMLVideoElement | null) => void;
+    handleRetry: (e: React.MouseEvent | React.TouchEvent) => void;
+    handleZoneClick: (zone: 'left' | 'center' | 'right', e: React.MouseEvent | React.TouchEvent) => void;
+    startSpeedUpTimer: () => void;
+    stopSpeedUpTimer: () => void;
+    handleTimeUpdate: (e: React.SyntheticEvent<HTMLVideoElement>) => void;
+    handleVideoEnded: () => void;
+    handleVideoError: () => void;
+    preventDefaultMenu: (e: React.SyntheticEvent) => boolean;
+  };
+
+  function renderSlide(
+    video: Video,
+    index: number,
+    state: RenderSlideState,
+    t: RiyilsTranslations,
+    handlers: RenderSlideHandlers
+  ): React.JSX.Element {
+    const mounted = shouldKeepMounted(index, state.currentIndex);
+    const active = index === state.currentIndex;
+
+    if (!mounted) {
+      return (
+        <div className="react-riyils-viewer__slide">
+          <div className="react-riyils-viewer__loader" />
+        </div>
+      );
+    }
+
+    return (
+      <>
+        {active && state.hasError && (
+          <div className="react-riyils-viewer__error-overlay">
+            <div className="react-riyils-viewer__error-icon-box">
+              <AlertCircle size={48} className="react-riyils-viewer__error-icon" />
+            </div>
+            <button type="button" onClick={handlers.handleRetry} className="react-riyils-viewer__retry-btn">
+              <RotateCcw size={32} />
+            </button>
+          </div>
+        )}
+
+        {active && (
+          <fieldset
+            className="react-riyils-viewer__gesture-grid"
+            onContextMenu={handlers.preventDefaultMenu}
+            tabIndex={-1}
+            style={{ border: 0, margin: 0, padding: 0 }}
+          >
+            <button
+              type="button"
+              className="react-riyils-viewer__gesture-zone"
+              onClick={(e) => handlers.handleZoneClick('left', e)}
+              aria-label={t.rewind}
+              disabled={state.hasError}
+            />
+            <button
+              type="button"
+              className="react-riyils-viewer__gesture-zone"
+              onClick={(e) => handlers.handleZoneClick('center', e)}
+              aria-label={state.isPlaying ? 'Pause' : 'Play'}
+              disabled={state.hasError}
+            />
+            <button
+              type="button"
+              className="react-riyils-viewer__gesture-zone"
+              onClick={(e) => handlers.handleZoneClick('right', e)}
+              onTouchStart={handlers.startSpeedUpTimer}
+              onTouchEnd={handlers.stopSpeedUpTimer}
+              onMouseDown={handlers.startSpeedUpTimer}
+              onMouseUp={handlers.stopSpeedUpTimer}
+              aria-label={t.forward}
+              disabled={state.hasError}
+            />
+          </fieldset>
+        )}
+
+        {active && !state.hasError && (
+          <>
+            <div className={`react-riyils-viewer__feedback-speed ${state.isSpeedUp ? 'visible' : ''}`}>
+              <Zap size={16} fill="currentColor" className="text-yellow-400" />
+              <span>{t.speedIndicator}</span>
+            </div>
+
+            {!state.isPlaying && (
+              <div className="react-riyils-viewer__feedback-center">
+                <div className="react-riyils-viewer__feedback-icon animate-in">
+                  <Play size={32} fill="white" />
+                </div>
+              </div>
+            )}
+
+            {state.isPlaying && state.showPlayPauseIcon && (
+              <div className="react-riyils-viewer__feedback-center">
+                <div className="react-riyils-viewer__feedback-icon animate-out">
+                  <Pause size={32} fill="white" />
+                </div>
+              </div>
+            )}
+
+            {state.seekFeedback && (
+              <div
+                className={`react-riyils-viewer__feedback-seek ${state.seekFeedback === 'forward' ? 'right' : 'left'
+                  }`}
+              >
+                <div className="react-riyils-viewer__seek-circle">
+                  {state.seekFeedback === 'forward' ? (
+                    <ChevronsRight size={32} />
+                  ) : (
+                    <ChevronsLeft size={32} />
+                  )}
+                  <span className="react-riyils-viewer__seek-text">10s</span>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        <video
+          ref={handlers.assignVideoRef(index)}
+          className={`react-riyils-viewer__video ${active ? 'active' : 'react-riyils-viewer__video-buffer'}`}
+          playsInline
+          loop={!state.enableAutoAdvance}
+          muted={state.isMuted}
+          autoPlay={active}
+          poster={video.thumbnailUrl}
+          onTimeUpdate={active ? handlers.handleTimeUpdate : undefined}
+          onEnded={active ? handlers.handleVideoEnded : undefined}
+          onError={active ? handlers.handleVideoError : undefined}
+          onContextMenu={active ? handlers.preventDefaultMenu : undefined}
+          disablePictureInPicture
+          disableRemotePlayback
+          aria-label={active ? state.activeAriaLabel : undefined}
+          tabIndex={-1}
+        >
+          <track kind="captions" src={video.captionUrl || ''} label="English" />
+        </video>
+      </>
+    );
+  }
 
   return (
     <div
@@ -378,119 +715,32 @@ export function RiyilsViewer({
       >
         {videos.map((video, index) => (
           <SwiperSlide key={video.id} virtualIndex={index} className="react-riyils-viewer__slide">
-            {index === currentIndex ? (
-              <>
-                {hasError && (
-                  <div className="react-riyils-viewer__error-overlay">
-                    <div className="react-riyils-viewer__error-icon-box">
-                      <AlertCircle size={48} className="react-riyils-viewer__error-icon" />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleRetry}
-                      className="react-riyils-viewer__retry-btn"
-                    >
-                      <RotateCcw size={32} />
-                    </button>
-                  </div>
-                )}
-
-                <fieldset
-                  className="react-riyils-viewer__gesture-grid"
-                  onContextMenu={preventDefaultMenu}
-                  tabIndex={-1}
-                  style={{ border: 0, margin: 0, padding: 0 }}
-                >
-                  <button
-                    type="button"
-                    className="react-riyils-viewer__gesture-zone"
-                    onClick={(e) => handleZoneClick('left', e)}
-                    aria-label={t.rewind}
-                    disabled={hasError}
-                  />
-
-                  <button
-                    type="button"
-                    className="react-riyils-viewer__gesture-zone"
-                    onClick={(e) => handleZoneClick('center', e)}
-                    aria-label={isPlaying ? 'Pause' : 'Play'}
-                    disabled={hasError}
-                  />
-
-                  <button
-                    type="button"
-                    className="react-riyils-viewer__gesture-zone"
-                    onClick={(e) => handleZoneClick('right', e)}
-                    onTouchStart={handleTouchStart}
-                    onTouchEnd={handleTouchEnd}
-                    onMouseDown={handleTouchStart}
-                    onMouseUp={handleTouchEnd}
-                    aria-label={t.forward}
-                    disabled={hasError}
-                  />
-                </fieldset>
-
-                {!hasError && (
-                  <>
-                    <div className={`react-riyils-viewer__feedback-speed ${isSpeedUp ? 'visible' : ''}`}>
-                      <Zap size={16} fill="currentColor" className="text-yellow-400" />
-                      <span>{t.speedIndicator}</span>
-                    </div>
-
-                    {!isPlaying && (
-                      <div className="react-riyils-viewer__feedback-center">
-                        <div className="react-riyils-viewer__feedback-icon animate-in">
-                          <Play size={32} fill="white" />
-                        </div>
-                      </div>
-                    )}
-
-                    {isPlaying && showPlayPauseIcon && (
-                      <div className="react-riyils-viewer__feedback-center">
-                        <div className="react-riyils-viewer__feedback-icon animate-out">
-                          <Pause size={32} fill="white" />
-                        </div>
-                      </div>
-                    )}
-
-                    {seekFeedback && (
-                      <div className={`react-riyils-viewer__feedback-seek ${seekFeedback === 'forward' ? 'right' : 'left'}`}>
-                        <div className="react-riyils-viewer__seek-circle">
-                          {seekFeedback === 'forward' ? <ChevronsRight size={32} /> : <ChevronsLeft size={32} />}
-                          <span className="react-riyils-viewer__seek-text">10s</span>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
-
-                <video
-                  ref={activeVideoRef}
-                  className="react-riyils-viewer__video"
-                  playsInline
-                  loop={!enableAutoAdvance}
-                  muted={isMuted}
-                  autoPlay
-                  poster={video.thumbnailUrl}
-                  onTimeUpdate={handleTimeUpdate}
-                  onEnded={handleVideoEnded}
-                  onError={handleVideoError}
-                  onContextMenu={preventDefaultMenu}
-                  disablePictureInPicture
-                  disableRemotePlayback
-                  aria-label={`Video ${video.id}`}
-                >
-                  <track
-                    kind="captions"
-                    src={video.captionUrl || ''}
-                    label="English"
-                  />
-                </video>
-              </>
-            ) : (
-              <div className="react-riyils-viewer__slide">
-                <div className="react-riyils-viewer__loader" />
-              </div>
+            {renderSlide(
+              video,
+              index,
+              {
+                currentIndex,
+                hasError,
+                isMuted,
+                isPlaying,
+                isSpeedUp,
+                seekFeedback,
+                showPlayPauseIcon,
+                enableAutoAdvance,
+                activeAriaLabel: index === currentIndex ? activeAriaLabel : undefined,
+              },
+              t,
+              {
+                assignVideoRef,
+                handleRetry,
+                handleZoneClick,
+                startSpeedUpTimer,
+                stopSpeedUpTimer,
+                handleTimeUpdate,
+                handleVideoEnded,
+                handleVideoError,
+                preventDefaultMenu,
+              }
             )}
           </SwiperSlide>
         ))}
