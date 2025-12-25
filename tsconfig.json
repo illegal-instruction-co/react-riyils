@@ -1,8 +1,11 @@
 {
   "compilerOptions": {
-    "target": "ES2015",
+    "target": "ES2016",
     "module": "ESNext",
-    "lib": ["ES2015", "DOM"],
+    "lib": [
+      "ES2016",
+      "DOM"
+    ],
     "jsx": "react",
     "declaration": true,
     "declarationMap": true,
@@ -16,6 +19,11 @@
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }

@@ -13,14 +13,14 @@ import {
   ChevronsUp,
   Zap
 } from 'lucide-react';
-import { useVideoSource } from './use-video-source';
+import { useVideoSource, type VideoQualityVariants } from './use-video-source';
 
 import 'swiper/css';
 import 'swiper/css/virtual';
 
 export interface Video {
   id: string;
-  videoUrl: string;
+  videoUrl: string | VideoQualityVariants;
   thumbnailUrl?: string;
   duration?: number;
   captionUrl?: string;

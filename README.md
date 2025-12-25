@@ -1,45 +1,57 @@
-
-[![npm version](https://img.shields.io/npm/v/react-riyils.svg)](https://www.npmjs.com/package/react-riyils)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
 # React Riyils
 
-Check out the live demo here: [Demo](https://illegal-instruction-co.github.io/react-riyils/)
+**The most performant React component for Instagram-like reels, stories, and vertical video feeds.**
 
+Check out the live demo here: **Demo**
 
-React Riyils is a React component for building Instagram-style vertical video stories and reels. It helps you add mobile-friendly, touch-enabled video carousels and fullscreen viewers to your web projects with ease.
+React Riyils helps you add mobile-friendly, touch-enabled video carousels and fullscreen viewers to your web projects.
+It goes beyond simple playback by offering **Smart Quality Selection** and **HLS Support** out of the box.
+
+---
 
 ## Features
 
-Features:
+- **Mobile-first**  
+  Fully responsive touch gestures (swipe, tap to pause, double tap to seek)
 
-- Mobile-first and fully responsive
-- Smooth, high-performance video playback
-- Touch, mouse, and keyboard navigation
-- Infinite scroll and dynamic loading
-- TypeScript support
-- Customizable UI and translations
-- Lightweight and easy to integrate
+- **HLS Support**  
+  Native support for `.m3u8` streaming via `hls.js`
 
-## Demo
+- **Smart MP4 Selection**  
+  Automatically serves low, mid, or high quality MP4s based on network speed and device
 
-See the live demo: [Demo Page](./demo.html)
+- **High Performance**  
+  Virtualized slides, infinite scroll, and dynamic loading
+
+- **Customizable**  
+  TypeScript support, custom translations, and flexible styling
+
+---
 
 ## Installation
 
-```
+```bash
 npm install react-riyils
 ```
 
+---
+
 ## Usage
 
-```jsx
-import { ReactRiyils, RiyilsViewer } from 'react-riyils';
+### 1. Basic Usage
 
+Import the components and styles.
+
+```tsx
+import { ReactRiyils, RiyilsViewer } from 'react-riyils';
+import 'react-riyils/dist/index.css';
+import { useState } from 'react';
+```
+
+```tsx
 const videos = [
-  { id: '1', videoUrl: 'https://media.w3.org/2010/05/sintel/trailer_hd.mp4' },
-  { id: '2', videoUrl: 'https://media.w3.org/2010/05/bunny/trailer.mp4' },
-  // ...more videos
+  { id: '1', videoUrl: 'https://example.com/video.mp4' },
+  { id: '2', videoUrl: 'https://example.com/stream.m3u8' },
 ];
 
 function App() {
@@ -54,6 +66,7 @@ function App() {
         onVideoClick={() => setShowViewer(true)}
         onVideoChange={setCurrentIndex}
       />
+
       {showViewer && (
         <RiyilsViewer
           videos={videos}
@@ -65,46 +78,89 @@ function App() {
     </>
   );
 }
+
+export default App;
 ```
+
+---
+
+## Smart MP4 Quality Selection
+
+If you do not use HLS but have multiple MP4 qualities, you can provide an object.
+The component automatically selects the best quality based on network speed and device.
+
+```tsx
+const adaptiveVideos = [
+  {
+    id: '3',
+    videoUrl: {
+      low: 'https://example.com/video_360p.mp4',
+      mid: 'https://example.com/video_720p.mp4',
+      high: 'https://example.com/video_1080p.mp4',
+    },
+  },
+];
+```
+
+---
+
+## Video Source Format
+
+You can pass either a string or a quality object.
+
+| Type | Example | Description |
+|------|--------|-------------|
+| String | `https://.../video.mp4` | Standard MP4 playback |
+| String (HLS) | `https://.../master.m3u8` | Adaptive streaming via HLS.js |
+| Object | `{ low: '...', high: '...' }` | Smart selection based on device and network |
+
+---
 
 ## Props
 
-### `<ReactRiyils />`
+### `<ReactRiyils />` (Carousel)
 
-| Prop                | Type     | Description                                      |
-|---------------------|----------|--------------------------------------------------|
-| `videos`            | array    | List of video objects `{ id, videoUrl }`         |
-| `currentIndex`      | number   | Index of the currently active video              |
-| `onVideoClick`      | func     | Called when a video is clicked                   |
-| `onVideoChange`     | func     | Called when the active video changes             |
-| `translations`      | object   | (Optional) Custom UI text                        |
-| `containerHeightMobile` | number | (Optional) Height for mobile view                |
-| `containerHeightDesktop` | number | (Optional) Height for desktop view              |
+| Prop | Type | Description |
+|------|------|-------------|
+| videos | array | List of video objects |
+| currentIndex | number | Active video index |
+| onVideoClick | function | Triggered on video click |
+| onVideoChange | function | Triggered when active video changes |
+| translations | object | Optional custom UI text |
+| containerHeightMobile | number | Optional mobile height (px) |
+| containerHeightDesktop | number | Optional desktop height (px) |
 
-### `<RiyilsViewer />`
+---
 
-| Prop                | Type     | Description                                      |
-|---------------------|----------|--------------------------------------------------|
-| `videos`            | array    | List of video objects `{ id, videoUrl }`         |
-| `initialIndex`      | number   | Index to open the viewer at                      |
-| `onClose`           | func     | Called when the viewer is closed                 |
-| `onVideoChange`     | func     | Called when the active video changes             |
-| `translations`      | object   | (Optional) Custom UI text                        |
+### `<RiyilsViewer />` (Fullscreen)
+
+| Prop | Type | Description |
+|------|------|-------------|
+| videos | array | List of video objects |
+| initialIndex | number | Starting index |
+| onClose | function | Triggered on close |
+| onVideoChange | function | Triggered when active video changes |
+| translations | object | Optional custom UI text |
+
+---
 
 ## Customization
 
-- **Translations:** Pass a `translations` object to override default UI text.
-- **Styling:** Use your own CSS or extend the included styles for custom look.
+- **Translations**  
+  Pass a `translations` object to override default UI text
+
+- **Styling**  
+  Override CSS classes such as `.react-riyils__slide-button` for custom designs
+
+---
 
 ## License
 
 MIT
 
-## Credits
-
-- Built with [React](https://reactjs.org/)
-- Video samples from [W3Schools](https://www.w3schools.com/), [Google Sample Videos](https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/)
-
 ---
 
-For more details, see the source code and demo.
+## Credits
+
+- Built with React and Swiper
+- HLS support powered by hls.js

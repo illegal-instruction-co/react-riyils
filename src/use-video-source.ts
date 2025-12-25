@@ -1,18 +1,42 @@
-import { useEffect, RefObject } from 'react';
+import { useEffect, useMemo, RefObject } from 'react';
 import Hls from 'hls.js';
+
+export interface VideoQualityVariants {
+    low?: string;
+    mid?: string;
+    high?: string;
+}
+
+function selectOptimalSource(variants: VideoQualityVariants): string | undefined {
+    const connection = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
+    const isSlowConnection = connection ? (connection.saveData === true || ['slow-2g', '2g', '3g'].includes(connection.effectiveType)) : false;
+    const isSmallScreen = typeof globalThis.window === 'object' ? globalThis.window.innerWidth < 768 : false;
+
+    if (isSlowConnection || isSmallScreen) {
+        return variants.low || variants.mid || variants.high;
+    }
+
+    return variants.high || variants.mid || variants.low;
+}
 
 export function useVideoSource(
     videoRef: RefObject<HTMLVideoElement>,
-    src: string | undefined,
+    src: string | VideoQualityVariants | undefined,
     shouldLoad: boolean
 ) {
+    const finalUrl = useMemo(() => {
+        if (!src) return undefined;
+        if (typeof src === 'string') return src;
+        return selectOptimalSource(src);
+    }, [src]);
+
     useEffect(() => {
         const video = videoRef.current;
 
-        if (!video || !src || !shouldLoad) return;
+        if (!video || !finalUrl || !shouldLoad) return;
 
         let hls: Hls | null = null;
-        const isHlsSource = src.includes('.m3u8');
+        const isHlsSource = finalUrl.includes('.m3u8');
 
         if (isHlsSource && Hls.isSupported()) {
             hls = new Hls({
@@ -20,19 +44,14 @@ export function useVideoSource(
                 capLevelToPlayerSize: true,
             });
 
-            hls.loadSource(src);
+            hls.loadSource(finalUrl);
             hls.attachMedia(video);
-
-            hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                // Auto-play can be handled here if needed
-            });
         }
-
         else if (isHlsSource && video.canPlayType('application/vnd.apple.mpegurl')) {
-            video.src = src;
+            video.src = finalUrl;
         }
         else {
-            video.src = src;
+            video.src = finalUrl;
         }
 
         return () => {
@@ -40,5 +59,5 @@ export function useVideoSource(
                 hls.destroy();
             }
         };
-    }, [src, shouldLoad, videoRef]);
+    }, [finalUrl, shouldLoad, videoRef]);
 }
