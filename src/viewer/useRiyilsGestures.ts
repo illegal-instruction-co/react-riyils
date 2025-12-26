@@ -1,6 +1,6 @@
 import { useCallback, useRef } from 'react'
 
-const DOUBLE_TAP_DELAY_MS = 300
+const DOUBLE_TAP_DELAY_MS = 200
 const LONG_PRESS_DELAY_MS = 500
 const SEEK_SECONDS = 10
 

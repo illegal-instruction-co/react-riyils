@@ -17,6 +17,14 @@ export function useCarouselPlayback(
     const [hasError, setHasError] = useState(false)
     const timerRef = useRef<number | null>(null)
     const retryRef = useRef<number | null>(null)
+    const mountedRef = useRef(false)
+
+    useEffect(() => {
+        mountedRef.current = true
+        return () => {
+            mountedRef.current = false
+        }
+    }, [])
 
     const clearTimers = () => {
         if (timerRef.current) {
@@ -41,14 +49,22 @@ export function useCarouselPlayback(
         const tryPlay = async () => {
             try {
                 await video.play()
+
+                if (!mountedRef.current || (!isActive && !isPreview)) {
+                    video.pause()
+                    return
+                }
+
                 observer.play(videoId, isActive ? 'auto' : 'resume')
             } catch {
+                if (!mountedRef.current) return
                 retryRef.current = globalThis.window.setTimeout(tryPlay, RETRY_MS)
                 return
             }
 
             if (isPreview && !isActive) {
                 timerRef.current = globalThis.window.setTimeout(() => {
+                    if (!mountedRef.current) return
                     video.pause()
                     video.currentTime = 0
                     observer.pause(videoId, 'auto')
@@ -81,10 +97,12 @@ export function useCarouselPlayback(
     return {
         hasError,
         onError: () => {
+            if (!mountedRef.current) return
             setHasError(true)
             observer.error(videoId, 'decode')
         },
         retry: () => {
+            if (!mountedRef.current) return
             setHasError(false)
             observer.retry(videoId)
 
@@ -92,7 +110,6 @@ export function useCarouselPlayback(
             if (!video) return
 
             video.load()
-
             observer.play(videoId, 'user')
         },
     }

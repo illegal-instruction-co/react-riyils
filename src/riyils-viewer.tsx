@@ -442,19 +442,6 @@ function RiyilsViewerInner({
     observer.seek(id, 0, 'gesture');
   }, [currentIndex, getActiveId, getVideoEl, observer]);
 
-  const handleVideoEnded = useCallback(() => {
-    if (!enableAutoAdvance) return
-    const swiper = swiperRef.current
-    const v = getVideoEl(currentIndex)
-    if (!swiper || !v) return
-    if (swiper.isEnd) {
-      v.currentTime = 0
-      void v.play().catch(() => undefined)
-      return
-    }
-    swiper.slideNext()
-  }, [currentIndex, enableAutoAdvance, getVideoEl])
-
   const handleSlideChange = useCallback(
     (s: SwiperType) => {
       const nextIndex = s.activeIndex
@@ -471,18 +458,52 @@ function RiyilsViewerInner({
     [getVideoEl, onVideoChange, preloadAround, registry]
   )
 
+  const stateRef = useRef({
+    currentIndex,
+    videos,
+    enableAutoAdvance,
+    playbackHandlers,
+    registry
+  })
+
+  useEffect(() => {
+    stateRef.current = {
+      currentIndex,
+      videos,
+      enableAutoAdvance,
+      playbackHandlers,
+      registry
+    }
+  })
+
   const handlers: SlideHandlers = useMemo(
     () => ({
-      registerVideo: registry.register,
+      registerVideo: (index: number) => (el: HTMLVideoElement | null) => {
+        stateRef.current.registry.register(index)(el)
+      },
       onZoneClick,
       onStartSpeed,
       onStopSpeed,
       onTimeUpdate: handleTimeUpdate,
-      onEnded: handleVideoEnded,
-      onError: playbackHandlers.onError,
+      onEnded: () => {
+        const { enableAutoAdvance, currentIndex, playbackHandlers, registry } = stateRef.current
+        playbackHandlers.onEnded()
+
+        if (!enableAutoAdvance) return
+        const swiper = swiperRef.current
+        const v = registry.get(currentIndex)
+        if (!swiper || !v) return
+        if (swiper.isEnd) {
+          v.currentTime = 0
+          void v.play().catch(() => undefined)
+          return
+        }
+        swiper.slideNext()
+      },
+      onError: () => stateRef.current.playbackHandlers.onError(),
       onRetry: (e) => {
         e.stopPropagation()
-        playbackHandlers.onRetry()
+        stateRef.current.playbackHandlers.onRetry()
       },
       onContextMenu: (e) => {
         e.preventDefault()
@@ -490,16 +511,7 @@ function RiyilsViewerInner({
         return false
       },
     }),
-    [
-      getActiveId,
-      handleTimeUpdate,
-      handleVideoEnded,
-      onStartSpeed,
-      onStopSpeed,
-      onZoneClick,
-      playbackHandlers,
-      registry.register,
-    ]
+    [handleTimeUpdate, onStartSpeed, onStopSpeed, onZoneClick]
   )
 
   const activeAriaLabel = useMemo(() => {

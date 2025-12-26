@@ -167,14 +167,29 @@ export function detachMedia(video: HTMLVideoElement): void {
     } catch {
     }
 }
+
 type Entry = {
     url: string;
     hls: Hls | null;
     refCount: number;
 };
 
+const CACHE_LIMIT = 50;
+
 class VideoSourceManager {
     private readonly cache = new Map<string, Entry>();
+
+    private cleanupCacheIfNeeded() {
+        if (this.cache.size >= CACHE_LIMIT) {
+            for (const [oldKey, entry] of this.cache) {
+                if (entry.refCount === 0) {
+                    entry.hls?.destroy();
+                    this.cache.delete(oldKey);
+                    if (this.cache.size < CACHE_LIMIT) break;
+                }
+            }
+        }
+    }
 
     private ensureEntry(key: string, src?: string | VideoQualityVariants): Entry | null {
         if (!src) return null;
@@ -183,12 +198,18 @@ class VideoSourceManager {
         if (!url) return null;
 
         const existing = this.cache.get(key);
-        if (existing?.url === url) return existing;
+        if (existing?.url === url) {
+            this.cache.delete(key);
+            this.cache.set(key, existing);
+            return existing;
+        }
 
         if (existing) {
             existing.hls?.destroy();
             this.cache.delete(key);
         }
+
+        this.cleanupCacheIfNeeded();
 
         let hls: Hls | null = null;
         if (isHlsUrl(url) && Hls.isSupported()) {
@@ -266,24 +287,29 @@ export function useVideoSource(
     const key = useMemo(() => buildKey(scope, id), [scope, id]);
 
     useEffect(() => {
-        const video = videoRef.current
-        if (!video) return
+        const video = videoRef.current;
+        if (!video) return;
 
         if (!shouldLoad || !src) {
             if (scope !== 'viewer' && !isIosSafari()) {
-                videoSourceManager.detach(key, video)
+                videoSourceManager.detach(key, video);
             }
-            return
+            return;
         }
 
-        videoSourceManager.attach(video, key, src)
+        let isAttached = false;
+        const timer = globalThis.window.setTimeout(() => {
+            isAttached = true;
+            videoSourceManager.attach(video, key, src);
+        }, 150);
 
         return () => {
-            if (scope !== 'viewer' && !isIosSafari()) {
-                videoSourceManager.detach(key, video)
+            globalThis.window.clearTimeout(timer);
+            if (isAttached && scope !== 'viewer' && !isIosSafari()) {
+                videoSourceManager.detach(key, video);
             }
-        }
-    }, [key, scope, shouldLoad, src, videoRef])
+        };
+    }, [key, scope, shouldLoad, src, videoRef]);
 
     return finalUrl;
 }
