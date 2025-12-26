@@ -42,6 +42,11 @@ export interface RiyilsTranslations {
   speedIndicator: string
   forward: string
   rewind: string
+  play: string
+  pause: string
+  mute: string
+  unmute: string
+  videoPlayer: string
 }
 
 export const defaultRiyilsTranslations: RiyilsTranslations = {
@@ -49,6 +54,11 @@ export const defaultRiyilsTranslations: RiyilsTranslations = {
   speedIndicator: '2x Speed',
   forward: '10s Forward',
   rewind: '10s Rewind',
+  play: 'Play',
+  pause: 'Pause',
+  mute: 'Mute',
+  unmute: 'Unmute',
+  videoPlayer: 'Video player',
 }
 
 export interface RiyilsViewerProps {
@@ -162,7 +172,6 @@ const RiyilsSlide = React.memo(function RiyilsSlide({
           className="react-riyils-viewer__gesture-grid"
           onContextMenu={handlers.onContextMenu}
           tabIndex={-1}
-          style={{ border: 0, margin: 0, padding: 0 }}
         >
           <button
             type="button"
@@ -175,7 +184,7 @@ const RiyilsSlide = React.memo(function RiyilsSlide({
             type="button"
             className="react-riyils-viewer__gesture-zone"
             onClick={(e) => handlers.onZoneClick('center', e)}
-            aria-label={playback.isPlaying ? 'Pause' : 'Play'}
+            aria-label={playback.isPlaying ? t.pause : t.play}
             disabled={playback.hasError}
           />
           <button
@@ -272,8 +281,7 @@ function VideoEl({
           handlers.registerVideo(index)(el)
           videoRef.current = el
         }}
-        className={`react-riyils-viewer__video ${active ? 'active' : 'react-riyils-viewer__video-buffer'
-          }`}
+        className={`react-riyils-viewer__video ${active ? 'active' : 'react-riyils-viewer__video-buffer'}`}
         playsInline
         loop={!playback.enableAutoAdvance}
         muted={playback.isMuted}
@@ -286,6 +294,7 @@ function VideoEl({
         disablePictureInPicture
         disableRemotePlayback
         aria-label={active ? activeAriaLabel : undefined}
+        aria-hidden={!active}
         tabIndex={-1}
       >
         <track kind="captions" src={video.captionUrl || ''} label="English" />
@@ -479,8 +488,8 @@ function RiyilsViewerInner({
 
   const activeAriaLabel = useMemo(() => {
     const id = videos[currentIndex]?.id ?? ''
-    return `Video ${id}`
-  }, [currentIndex, videos])
+    return `${t.videoPlayer} - ${id}`
+  }, [currentIndex, videos, t.videoPlayer])
 
   const uiState: SlideUIState = useMemo(
     () => ({
@@ -501,7 +510,7 @@ function RiyilsViewerInner({
   )
 
   return (
-    <div ref={containerRef} className="react-riyils-viewer" style={{ WebkitTouchCallout: 'none' }}>
+    <div ref={containerRef} className="react-riyils-viewer">
       <div className="react-riyils-viewer__gradient-top" />
       <ProgressBar ref={progressBarRef} color={progressBarColor} />
       <div className="react-riyils-viewer__close-container">
@@ -545,21 +554,8 @@ function RiyilsViewerInner({
       </Swiper>
 
       <div
-        className="react-riyils-viewer__scroll-hint"
-        style={{
-          position: 'absolute',
-          bottom: '80px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 45,
-          pointerEvents: 'none',
-          opacity: uiState.showScrollHint ? 1 : 0,
-          transition: 'opacity 0.5s ease-in-out',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          animation: uiState.showScrollHint ? 'rr-bounce 1s infinite' : 'none',
-        }}
+        className={`react-riyils-viewer__scroll-hint ${uiState.showScrollHint ? 'react-riyils-viewer__scroll-hint--visible' : 'react-riyils-viewer__scroll-hint--hidden'
+          }`}
       >
         <ChevronsUp size={32} color="rgba(255, 255, 255, 0.7)" />
       </div>
@@ -573,18 +569,12 @@ function RiyilsViewerInner({
               playbackHandlers.toggleMute()
             }}
             className="react-riyils-viewer__btn react-riyils-viewer__btn-mute"
+            aria-label={playbackState.isMuted ? t.unmute : t.mute}
           >
             {playbackState.isMuted ? <VolumeX size={24} /> : <Volume2 size={24} />}
           </button>
         </div>
       </div>
-
-      <style>{`
-        @keyframes rr-bounce {
-          0%, 100% { transform: translateX(-50%) translateY(0); }
-          50% { transform: translateX(-50%) translateY(-10px); }
-        }
-      `}</style>
     </div>
   )
 }

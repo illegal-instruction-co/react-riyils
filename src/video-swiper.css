@@ -618,3 +618,32 @@
 .react-riyils-viewer__video-wrapper video {
   pointer-events: none;
 }
+
+.react-riyils-viewer__scroll-hint {
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 45;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: opacity 0.5s ease-in-out;
+}
+
+.react-riyils-viewer__scroll-hint--visible {
+  opacity: 1;
+  animation: rr-bounce 1s infinite;
+}
+
+.react-riyils-viewer__scroll-hint--hidden {
+  opacity: 0;
+  animation: none;
+}
+
+.react-riyils-viewer__gesture-grid {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
