@@ -10,3 +10,4 @@ node_modules/
 *.tsbuildinfo
 TODO
 summary.txt
+coverage
