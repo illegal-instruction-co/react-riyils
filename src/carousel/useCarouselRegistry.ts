@@ -1,7 +1,13 @@
-import { useCallback, useRef } from 'react'
+import { useCallback, useRef, useEffect } from 'react'
 
 export function useCarouselRegistry() {
     const refs = useRef<Map<string, HTMLVideoElement>>(new Map())
+
+    useEffect(() => {
+        return () => {
+            refs.current.clear()
+        }
+    }, [])
 
     const register = useCallback(
         (id: string) => (el: HTMLVideoElement | null) => {
@@ -19,9 +25,11 @@ export function useCarouselRegistry() {
     }, [])
 
     const pauseAllExcept = useCallback((id: string) => {
-        refs.current.forEach((video, key) => {
-            if (key !== id) video.pause()
-        })
+        for (const [key, video] of refs.current) {
+            if (key !== id) {
+                video.pause()
+            }
+        }
     }, [])
 
     return {

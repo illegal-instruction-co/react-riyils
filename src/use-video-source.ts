@@ -1,279 +1,309 @@
-import { useEffect, useMemo, type RefObject } from 'react';
-import Hls from 'hls.js';
+import { useEffect, useMemo, type RefObject } from 'react'
+import Hls from 'hls.js'
+import { isIosSafari } from './utils'
 
 export interface VideoQualityVariants {
-    low?: string;
-    mid?: string;
-    high?: string;
+    low?: string
+    mid?: string
+    high?: string
 }
 
 type ConnectionInfo = {
-    saveData?: boolean;
-    effectiveType?: string;
-};
+    saveData?: boolean
+    effectiveType?: string
+}
 
 function getConnection(): ConnectionInfo | null {
-    const nav = navigator as unknown as { connection?: unknown };
-    if (!nav.connection || typeof nav.connection !== 'object') return null;
-    return nav.connection as ConnectionInfo;
+    const nav = navigator as unknown as { connection?: unknown }
+    if (!nav.connection || typeof nav.connection !== 'object') return null
+    return nav.connection as ConnectionInfo
 }
 
 function isSlowConnection(connection: ConnectionInfo | null): boolean {
-    const effectiveType = connection?.effectiveType ?? '';
-    return connection?.saveData === true || ['slow-2g', '2g', '3g'].includes(effectiveType);
+    const effectiveType = connection?.effectiveType ?? ''
+    return connection?.saveData === true || ['slow-2g', '2g', '3g'].includes(effectiveType)
 }
 
 function isSmallScreen(): boolean {
-    return typeof globalThis.window === 'object' && window.innerWidth < 768;
+    return typeof globalThis.window === 'object' && window.innerWidth < 768
 }
 
 function selectOptimalSource(variants: VideoQualityVariants): string | undefined {
-    const connection = getConnection();
-    const preferLow = isSlowConnection(connection) || isSmallScreen();
-    if (preferLow) return variants.low || variants.mid || variants.high;
-    return variants.high || variants.mid || variants.low;
+    const connection = getConnection()
+    const preferLow = isSlowConnection(connection) || isSmallScreen()
+    if (preferLow) return variants.low || variants.mid || variants.high
+    return variants.high || variants.mid || variants.low
 }
 
 function resolveFinalUrl(src: string | VideoQualityVariants | undefined): string | undefined {
-    if (!src) return undefined;
-    if (typeof src === 'string') return src;
-    return selectOptimalSource(src);
+    if (!src) return undefined
+    if (typeof src === 'string') return src
+    return selectOptimalSource(src)
 }
 
 function isHlsUrl(url: string): boolean {
-    return url.includes('.m3u8');
-}
-
-function isIosSafari(): boolean {
-    if (typeof navigator === 'undefined') return false
-    const ua = navigator.userAgent
-    return /iPad|iPhone|iPod/.test(ua) && /Safari/.test(ua) && !/CriOS|FxiOS/.test(ua)
+    return url.includes('.m3u8')
 }
 
 async function sleep(ms: number): Promise<void> {
-    await new Promise<void>((r) => globalThis.window.setTimeout(r, ms));
+    await new Promise<void>((r) => globalThis.window.setTimeout(r, ms))
 }
 
 async function verifyProgressByTime(video: HTMLVideoElement, ms: number): Promise<boolean> {
-    const start = video.currentTime;
-    await sleep(ms);
-    return video.currentTime > start;
+    const start = video.currentTime
+    await sleep(ms)
+    return video.currentTime > start
 }
 
 type FrameCallbackVideo = HTMLVideoElement & {
-    requestVideoFrameCallback?: (cb: (now: number, metadata: unknown) => void) => number;
-    cancelVideoFrameCallback?: (id: number) => void;
-};
-
-async function verifyProgressByFrames(video: FrameCallbackVideo, timeoutMs: number): Promise<boolean> {
-    if (!video.requestVideoFrameCallback) return false;
-
-    return await new Promise<boolean>((resolve) => {
-        let settled = false;
-        let rafId: number | null = null;
-
-        const done = (v: boolean) => {
-            if (settled) return;
-            settled = true;
-            if (rafId !== null && video.cancelVideoFrameCallback) {
-                video.cancelVideoFrameCallback(rafId);
-            }
-            resolve(v);
-        };
-
-        const start = video.currentTime;
-
-        rafId = video.requestVideoFrameCallback(() => {
-            done(video.currentTime > start);
-        });
-
-        globalThis.window.setTimeout(() => done(false), timeoutMs);
-    });
+    requestVideoFrameCallback?: (cb: (now: number, metadata: unknown) => void) => number
+    cancelVideoFrameCallback?: (id: number) => void
 }
 
-type AttemptResult = 'ok' | 'not-allowed' | 'failed';
+async function verifyProgressByFrames(video: FrameCallbackVideo, timeoutMs: number): Promise<boolean> {
+    if (!video.requestVideoFrameCallback) return false
+
+    return await new Promise<boolean>((resolve) => {
+        let settled = false
+        let rafId: number | null = null
+
+        const done = (v: boolean) => {
+            if (settled) return
+            settled = true
+            if (rafId !== null && video.cancelVideoFrameCallback) {
+                video.cancelVideoFrameCallback(rafId)
+            }
+            resolve(v)
+        }
+
+        const start = video.currentTime
+
+        rafId = video.requestVideoFrameCallback(() => {
+            done(video.currentTime > start)
+        })
+
+        globalThis.window.setTimeout(() => done(false), timeoutMs)
+    })
+}
+
+type AttemptResult = 'ok' | 'not-allowed' | 'failed'
 
 async function attemptPlay(video: HTMLVideoElement): Promise<AttemptResult> {
     try {
-        await video.play();
-        return 'ok';
+        await video.play()
+        return 'ok'
     } catch (e) {
-        const err = e as { name?: string };
-        if (err?.name === 'NotAllowedError') return 'not-allowed';
-        return 'failed';
+        const err = e as { name?: string }
+        if (err?.name === 'NotAllowedError') return 'not-allowed'
+        return 'failed'
     }
 }
 
-export type DeterministicPlayResult = 'playing' | 'blocked' | 'failed';
+export type DeterministicPlayResult = 'playing' | 'blocked' | 'failed'
 
 export type DeterministicPlayOptions = {
-    muted: boolean;
-    playbackRate: number;
-    allowAutoMute: boolean;
-    verifyMs: number;
-};
+    muted: boolean
+    playbackRate: number
+    allowAutoMute: boolean
+    verifyMs: number
+}
 
 async function verifyProgress(video: HTMLVideoElement, verifyMs: number): Promise<boolean> {
-    const v = video as FrameCallbackVideo;
+    const v = video as FrameCallbackVideo
     if (typeof v.requestVideoFrameCallback === 'function') {
-        const byFrames = await verifyProgressByFrames(v, verifyMs);
-        if (byFrames) return true;
+        const byFrames = await verifyProgressByFrames(v, verifyMs)
+        if (byFrames) return true
     }
 
-    const fast = await verifyProgressByTime(video, Math.max(150, Math.floor(verifyMs * 0.6)));
-    if (fast) return true;
+    const fast = await verifyProgressByTime(video, Math.max(150, Math.floor(verifyMs * 0.6)))
+    if (fast) return true
 
-    const slow = await verifyProgressByTime(video, verifyMs);
-    return slow;
+    const slow = await verifyProgressByTime(video, verifyMs)
+    return slow
 }
 
 export async function playDeterministic(
     video: HTMLVideoElement,
     opts: DeterministicPlayOptions
 ): Promise<DeterministicPlayResult> {
-    video.muted = opts.muted;
-    video.playbackRate = opts.playbackRate;
+    video.muted = opts.muted
+    video.playbackRate = opts.playbackRate
 
-    const first = await attemptPlay(video);
+    const first = await attemptPlay(video)
     if (first === 'ok') {
-        const ok = await verifyProgress(video, opts.verifyMs);
-        if (ok) return 'playing';
-        video.pause();
-        return 'failed';
+        const ok = await verifyProgress(video, opts.verifyMs)
+        if (ok) return 'playing'
+        video.pause()
+        return 'failed'
     }
 
     if (first === 'not-allowed') {
-        if (!opts.allowAutoMute) return 'blocked';
+        if (!opts.allowAutoMute) return 'blocked'
 
-        video.muted = true;
-        const second = await attemptPlay(video);
-        if (second !== 'ok') return 'blocked';
+        video.muted = true
+        const second = await attemptPlay(video)
+        if (second !== 'ok') return 'blocked'
 
-        const ok = await verifyProgress(video, opts.verifyMs);
-        if (ok) return 'playing';
+        const ok = await verifyProgress(video, opts.verifyMs)
+        if (ok) return 'playing'
 
-        video.pause();
-        return 'failed';
+        video.pause()
+        return 'failed'
     }
 
-    return 'failed';
+    return 'failed'
 }
 
 export function detachMedia(video: HTMLVideoElement): void {
     try {
-        video.pause();
-        video.removeAttribute('src');
-        video.load();
-    } catch {
-    }
+        video.pause()
+        video.removeAttribute('src')
+        video.load()
+    } catch { }
 }
 
 type Entry = {
-    url: string;
-    hls: Hls | null;
-    refCount: number;
-};
+    url: string
+    hls: Hls | null
+    refCount: number
+}
 
-const CACHE_LIMIT = 50;
+const CACHE_LIMIT = 50
+const DISPOSE_DELAY_MS = 30000
 
 class VideoSourceManager {
-    private readonly cache = new Map<string, Entry>();
+    private readonly cache = new Map<string, Entry>()
+    private readonly disposeTimeouts = new Map<string, number>()
 
     private cleanupCacheIfNeeded() {
         if (this.cache.size >= CACHE_LIMIT) {
             for (const [oldKey, entry] of this.cache) {
-                if (entry.refCount === 0) {
-                    entry.hls?.destroy();
-                    this.cache.delete(oldKey);
-                    if (this.cache.size < CACHE_LIMIT) break;
+                if (entry.refCount === 0 && !this.disposeTimeouts.has(oldKey)) {
+                    entry.hls?.destroy()
+                    this.cache.delete(oldKey)
+                    if (this.cache.size < CACHE_LIMIT) break
                 }
             }
         }
     }
 
+    private cancelPendingDispose(key: string) {
+        if (this.disposeTimeouts.has(key)) {
+            globalThis.window.clearTimeout(this.disposeTimeouts.get(key))
+            this.disposeTimeouts.delete(key)
+        }
+    }
+
     private ensureEntry(key: string, src?: string | VideoQualityVariants): Entry | null {
-        if (!src) return null;
+        if (!src) return null
 
-        const url = resolveFinalUrl(src);
-        if (!url) return null;
+        const url = resolveFinalUrl(src)
+        if (!url) return null
 
-        const existing = this.cache.get(key);
+        this.cancelPendingDispose(key)
+
+        const existing = this.cache.get(key)
         if (existing?.url === url) {
-            this.cache.delete(key);
-            this.cache.set(key, existing);
-            return existing;
+            return existing
         }
 
         if (existing) {
-            existing.hls?.destroy();
-            this.cache.delete(key);
+            existing.hls?.destroy()
+            this.cache.delete(key)
         }
 
-        this.cleanupCacheIfNeeded();
+        this.cleanupCacheIfNeeded()
 
-        let hls: Hls | null = null;
+        let hls: Hls | null = null
         if (isHlsUrl(url) && Hls.isSupported()) {
-            hls = new Hls({ autoStartLoad: true, capLevelToPlayerSize: true });
-            hls.loadSource(url);
+            hls = new Hls({
+                autoStartLoad: true,
+                capLevelToPlayerSize: true,
+                enableWorker: true
+            })
+            hls.loadSource(url)
         }
 
-        const entry: Entry = { url, hls, refCount: 0 };
-        this.cache.set(key, entry);
-        return entry;
+        const entry: Entry = { url, hls, refCount: 0 }
+        this.cache.set(key, entry)
+        return entry
     }
 
     preload(key: string, src?: string | VideoQualityVariants): void {
-        this.ensureEntry(key, src);
+        const entry = this.ensureEntry(key, src)
+        if (entry) {
+            this.cancelPendingDispose(key)
+            const timeoutId = globalThis.window.setTimeout(() => {
+                if (entry.refCount === 0) {
+                    entry.hls?.destroy()
+                    this.cache.delete(key)
+                }
+                this.disposeTimeouts.delete(key)
+            }, DISPOSE_DELAY_MS)
+            this.disposeTimeouts.set(key, timeoutId)
+        }
     }
 
     attach(video: HTMLVideoElement, key: string, src?: string | VideoQualityVariants): void {
-        const entry = this.ensureEntry(key, src);
-        if (!entry) return;
+        const entry = this.ensureEntry(key, src)
+        if (!entry) return
 
-        entry.refCount += 1;
+        entry.refCount += 1
 
         if (entry.hls) {
-            entry.hls.attachMedia(video);
-            return;
+            entry.hls.attachMedia(video)
+            return
         }
 
         if (video.src !== entry.url) {
-            video.src = entry.url;
+            video.src = entry.url
         }
     }
 
     detach(key: string, video?: HTMLVideoElement): void {
-        const entry = this.cache.get(key);
+        const entry = this.cache.get(key)
         if (!entry) {
-            if (video) detachMedia(video);
-            return;
+            if (video) detachMedia(video)
+            return
         }
 
-        entry.refCount -= 1;
+        entry.refCount -= 1
 
         if (entry.refCount <= 0) {
-            entry.hls?.destroy();
-            this.cache.delete(key);
+            this.cancelPendingDispose(key)
+            const timeoutId = globalThis.window.setTimeout(() => {
+                if (this.cache.has(key)) {
+                    const currentEntry = this.cache.get(key)
+                    if (currentEntry && currentEntry.refCount <= 0) {
+                        currentEntry.hls?.destroy()
+                        this.cache.delete(key)
+                    }
+                }
+                this.disposeTimeouts.delete(key)
+            }, DISPOSE_DELAY_MS)
+
+            this.disposeTimeouts.set(key, timeoutId)
         }
 
-        if (video) detachMedia(video);
+        if (video) detachMedia(video)
     }
 
     reset(key: string): void {
-        const entry = this.cache.get(key);
-        if (!entry) return;
+        this.cancelPendingDispose(key)
+        const entry = this.cache.get(key)
+        if (!entry) return
 
-        entry.hls?.destroy();
-        this.cache.delete(key);
+        entry.hls?.destroy()
+        this.cache.delete(key)
     }
 }
 
-export const videoSourceManager = new VideoSourceManager();
+export const videoSourceManager = new VideoSourceManager()
 
-export type VideoSourceScope = 'viewer' | 'carousel';
+export type VideoSourceScope = 'viewer' | 'carousel'
 
 function buildKey(scope: VideoSourceScope, id: string): string {
-    return `${scope}:${id}`;
+    return `${scope}:${id}`
 }
 
 export function useVideoSource(
@@ -283,42 +313,44 @@ export function useVideoSource(
     src: string | VideoQualityVariants | undefined,
     shouldLoad: boolean
 ): string | undefined {
-    const finalUrl = useMemo(() => resolveFinalUrl(src), [src]);
-    const key = useMemo(() => buildKey(scope, id), [scope, id]);
+    const finalUrl = useMemo(() => resolveFinalUrl(src), [src])
+    const key = useMemo(() => buildKey(scope, id), [scope, id])
 
     useEffect(() => {
-        const video = videoRef.current;
-        if (!video) return;
+        const video = videoRef.current
+        if (!video) return
 
         if (!shouldLoad || !src) {
             if (scope !== 'viewer' && !isIosSafari()) {
-                videoSourceManager.detach(key, video);
+                videoSourceManager.detach(key, video)
             }
-            return;
+            return
         }
 
-        let isAttached = false;
+        let isAttached = false
+        const delay = scope === 'viewer' ? 0 : 150
+
         const timer = globalThis.window.setTimeout(() => {
-            isAttached = true;
-            videoSourceManager.attach(video, key, src);
-        }, 150);
+            isAttached = true
+            videoSourceManager.attach(video, key, src)
+        }, delay)
 
         return () => {
-            globalThis.window.clearTimeout(timer);
+            globalThis.window.clearTimeout(timer)
             if (isAttached && scope !== 'viewer' && !isIosSafari()) {
-                videoSourceManager.detach(key, video);
+                videoSourceManager.detach(key, video)
             }
-        };
-    }, [key, scope, shouldLoad, src, videoRef]);
+        }
+    }, [key, scope, shouldLoad, src, videoRef])
 
-    return finalUrl;
+    return finalUrl
 }
 
 export function preloadVideoSource(scope: VideoSourceScope, id: string, src?: string | VideoQualityVariants): void {
-    if (!src) return;
-    videoSourceManager.preload(buildKey(scope, id), src);
+    if (!src) return
+    videoSourceManager.preload(buildKey(scope, id), src)
 }
 
 export function resetVideoSource(scope: VideoSourceScope, id: string): void {
-    videoSourceManager.reset(buildKey(scope, id));
+    videoSourceManager.reset(buildKey(scope, id))
 }

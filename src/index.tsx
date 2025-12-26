@@ -47,10 +47,12 @@ function shouldPreload(index: number, activeIndex: number): boolean {
   return Math.abs(index - activeIndex) < 4
 }
 
-function CarouselSlideContainer({
+const CarouselSlideContainer = React.memo(function CarouselSlideContainer({
   video,
   index,
-  activeIndex,
+  isActive,
+  isPreview,
+  shouldLoad,
   t,
   registry,
   observer,
@@ -58,27 +60,22 @@ function CarouselSlideContainer({
 }: Readonly<{
   video: Video
   index: number
-  activeIndex: number
+  isActive: boolean
+  isPreview: boolean
+  shouldLoad: boolean
   t: ReactRiyilsTranslations
   registry: ReturnType<typeof useCarouselRegistry>
   observer: ReturnType<typeof useRiyilsObserver>
   onSlideClick: (index: number, isActive: boolean) => void
 }>) {
-  const isActive = index === activeIndex
-  const distance = Math.abs(index - activeIndex)
-  const isPreview = !isActive && distance <= 2
-  const shouldLoad = isActive || isPreview || shouldPreload(index, activeIndex)
-
   const videoRef = useRef<HTMLVideoElement | null>(null)
-
-  const registerRef = useMemo(() => registry.register(video.id), [registry, video.id])
 
   const setVideoRef = useCallback(
     (el: HTMLVideoElement | null) => {
-      registerRef(el)
+      registry.register(video.id)(el)
       videoRef.current = el
     },
-    [registerRef]
+    [registry, video.id]
   )
 
   useVideoSource(videoRef, 'carousel', video.id, video.videoUrl, shouldLoad)
@@ -108,7 +105,7 @@ function CarouselSlideContainer({
       onError={playback.onError}
     />
   )
-}
+})
 
 function ReactRiyilsInner({
   videos,
@@ -143,9 +140,13 @@ function ReactRiyilsInner({
   )
 
   useEffect(() => {
-    setActiveIndex(currentIndex)
-    swiperRef.current?.slideTo(currentIndex, 0)
-  }, [currentIndex])
+    if (activeIndex !== currentIndex) {
+      setActiveIndex(currentIndex)
+      if (swiperRef.current && !swiperRef.current.destroyed) {
+        swiperRef.current.slideTo(currentIndex, 0)
+      }
+    }
+  }, [currentIndex, activeIndex])
 
   useEffect(() => {
     preloadAround(activeIndex)
@@ -191,7 +192,7 @@ function ReactRiyilsInner({
         observeParents
         watchSlidesProgress
         initialSlide={currentIndex}
-        virtual={{ addSlidesBefore: 4, addSlidesAfter: 5, enabled: true, cache: false }}
+        virtual={{ addSlidesBefore: 2, addSlidesAfter: 2, enabled: true, cache: false }}
         effect="coverflow"
         coverflowEffect={{
           rotate: 0,
@@ -211,19 +212,28 @@ function ReactRiyilsInner({
         mousewheel={{ forceToAxis: true }}
         className="react-riyils"
       >
-        {videos.map((video, index) => (
-          <SwiperSlide key={video.id} virtualIndex={index}>
-            <CarouselSlideContainer
-              video={video}
-              index={index}
-              activeIndex={activeIndex}
-              t={t}
-              registry={registry}
-              observer={observer}
-              onSlideClick={handleSlideClick}
-            />
-          </SwiperSlide>
-        ))}
+        {videos.map((video, index) => {
+          const isActive = index === activeIndex
+          const distance = Math.abs(index - activeIndex)
+          const isPreview = !isActive && distance <= 2
+          const shouldLoad = isActive || isPreview || shouldPreload(index, activeIndex)
+
+          return (
+            <SwiperSlide key={video.id} virtualIndex={index}>
+              <CarouselSlideContainer
+                video={video}
+                index={index}
+                isActive={isActive}
+                isPreview={isPreview}
+                shouldLoad={shouldLoad}
+                t={t}
+                registry={registry}
+                observer={observer}
+                onSlideClick={handleSlideClick}
+              />
+            </SwiperSlide>
+          )
+        })}
       </Swiper>
 
       <ActiveAutoAdvanceBridge

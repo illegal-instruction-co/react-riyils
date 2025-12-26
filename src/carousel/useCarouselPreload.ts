@@ -5,7 +5,7 @@ import type { Video } from '../riyils-viewer'
 export function useCarouselPreload(videos: Video[]) {
     return useCallback(
         (index: number) => {
-            if (index < 0 || index >= videos.length) return
+            if (!videos || index < 0 || index >= videos.length) return
 
             const cur = videos[index]
             const prev = videos[index - 1]

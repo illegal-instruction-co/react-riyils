@@ -121,7 +121,7 @@ type SlideHandlers = {
   onZoneClick: (zone: GestureZone, e: React.MouseEvent | React.TouchEvent) => void
   onStartSpeed: () => void
   onStopSpeed: () => void
-  onTimeUpdate: (e: React.SyntheticEvent<HTMLVideoElement>) => void
+  onTimeUpdate: (e: Event) => void
   onEnded: () => void
   onError: () => void
   onRetry: (e: React.MouseEvent | React.TouchEvent) => void
@@ -269,6 +269,16 @@ function VideoEl({
 
   useVideoSource(videoRef, 'viewer', video.id, video.videoUrl, shouldLoad)
 
+  useEffect(() => {
+    const v = videoRef.current
+    if (!v || !active) return
+
+    v.addEventListener('timeupdate', handlers.onTimeUpdate)
+    return () => {
+      v.removeEventListener('timeupdate', handlers.onTimeUpdate)
+    }
+  }, [active, handlers.onTimeUpdate])
+
   const showLoading =
     active &&
     !playback.hasError &&
@@ -287,7 +297,6 @@ function VideoEl({
         muted={playback.isMuted}
         autoPlay={active}
         poster={video.thumbnailUrl}
-        onTimeUpdate={active ? handlers.onTimeUpdate : undefined}
         onEnded={active ? handlers.onEnded : undefined}
         onError={active ? handlers.onError : undefined}
         onContextMenu={active ? handlers.onContextMenu : undefined}
@@ -426,8 +435,8 @@ function RiyilsViewerInner({
     return () => globalThis.globalThis.window.clearTimeout(tmr)
   }, [currentIndex])
 
-  const handleTimeUpdate = useCallback((e: React.SyntheticEvent<HTMLVideoElement>) => {
-    const v = e.currentTarget
+  const handleTimeUpdate = useCallback((e: Event) => {
+    const v = e.target as HTMLVideoElement
     if (v.duration > 0) progressBarRef.current?.update((v.currentTime / v.duration) * 100)
   }, [])
 

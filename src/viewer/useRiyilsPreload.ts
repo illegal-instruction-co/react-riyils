@@ -9,7 +9,7 @@ export function useRiyilsPreload(
 ) {
     const preloadAround = useCallback(
         (index: number) => {
-            if (index < 0 || index >= videos.length) return
+            if (!videos || index < 0 || index >= videos.length) return
 
             const cur = videos[index]
             if (cur) preloadVideoSource('viewer', cur.id, cur.videoUrl)

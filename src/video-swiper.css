@@ -32,6 +32,7 @@
   background: transparent;
   overflow: hidden;
   padding: 80px 0 120px 0;
+  contain: content;
 }
 
 @media (min-width: 768px) {
@@ -46,11 +47,13 @@
   z-index: var(--z-base);
   overflow: visible !important;
   padding: 0 !important;
+  touch-action: pan-y;
 }
 
 .react-riyils .swiper-wrapper {
   overflow: visible;
   align-items: center;
+  will-change: transform;
 }
 
 .react-riyils .swiper-slide {
@@ -61,8 +64,9 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  transition: all 0.3s var(--rr-bezier);
+  transition: transform 0.3s var(--rr-bezier);
   transform-style: preserve-3d;
+  will-change: transform;
 }
 
 @media (min-width: 768px) {
@@ -84,18 +88,34 @@
   overflow: hidden;
   background: var(--rr-bg-card);
   filter: brightness(0.7);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
-  transform: translateZ(0);
+  transform: translate3d(0, 0, 0);
   will-change: transform, filter;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
-  transition: filter 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
+  transition: filter 0.3s ease, transform 0.3s ease;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+}
+
+.react-riyils__card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 24px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--rr-glass-border);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 2;
+  will-change: opacity;
 }
 
 .react-riyils__card.active {
   filter: brightness(1);
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--rr-glass-border);
-  transform: scale(1.05) translateZ(0);
+  transform: scale(1.05) translate3d(0, 0, 0);
+}
+
+.react-riyils__card.active::after {
+  opacity: 1;
 }
 
 .react-riyils__video {
@@ -103,7 +123,7 @@
   height: 100%;
   object-fit: cover;
   display: block;
-  transform: translateZ(0);
+  transform: translate3d(0, 0, 0);
 }
 
 .react-riyils .swiper-slide-active .swiper-slide-shadow-left,
@@ -128,6 +148,7 @@
   cursor: pointer;
   display: block;
   position: relative;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .react-riyils__cta-container {
@@ -138,13 +159,13 @@
   z-index: var(--z-ui);
   opacity: 0;
   pointer-events: none;
-  transform: translate(-50%, 15px);
+  transform: translate3d(-50%, 15px, 0);
   transition: opacity 0.3s var(--rr-bezier), transform 0.3s var(--rr-bezier);
 }
 
 .react-riyils__card.active .react-riyils__cta-container {
   opacity: 1;
-  transform: translate(-50%, 0);
+  transform: translate3d(-50%, 0, 0);
   pointer-events: auto;
 }
 
@@ -163,13 +184,12 @@
   font-weight: 600;
   cursor: pointer;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
-  transition: all 0.2s ease;
+  transition: transform 0.2s ease, background-color 0.2s ease;
 }
 
 .react-riyils__cta-button:hover {
   background: rgba(40, 40, 40, 0.9);
   transform: scale(1.05);
-  border-color: rgba(255, 255, 255, 0.4);
 }
 
 .react-riyils__error-container {
@@ -199,7 +219,7 @@
   justify-content: center;
   color: var(--rr-text);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: transform 0.2s ease, background-color 0.2s ease;
   pointer-events: auto;
 }
 
@@ -220,6 +240,7 @@
   -webkit-user-select: none;
   touch-action: pan-y;
   -webkit-touch-callout: none;
+  contain: strict;
 }
 
 .react-riyils-viewer .swiper {
@@ -234,6 +255,7 @@
   height: 100%;
   object-fit: contain;
   display: block;
+  transform: translate3d(0, 0, 0);
 }
 
 .react-riyils-viewer__slide {
@@ -260,32 +282,55 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-.react-riyils-viewer__progress-track,
-.react-riyils-viewer__progress-fill {
+.react-riyils-viewer__progress-input {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
   height: 4px;
-  transition: transform 0.2s ease;
-  transform-origin: center;
+  background: rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+  outline: none;
+  margin: 0;
+  display: block;
+  background-image: linear-gradient(to right, var(--progress-color) var(--progress-width), transparent var(--progress-width));
+  transition: height 0.2s ease;
 }
 
-.react-riyils-viewer__progress-container:hover .react-riyils-viewer__progress-track,
-.react-riyils-viewer__progress-container:hover .react-riyils-viewer__progress-fill {
-  transform: scaleY(1.5);
+.react-riyils-viewer__progress-container:hover .react-riyils-viewer__progress-input {
+  height: 6px;
 }
 
-.react-riyils-viewer__progress-thumb {
-  transform: translate(-50%, -50%) scale(1);
-  transition: transform 0.15s ease;
+.react-riyils-viewer__progress-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 0;
+  height: 0;
+  background: var(--progress-color);
+  border-radius: 50%;
+  transition: width 0.2s, height 0.2s, opacity 0.2s;
+  opacity: 0;
 }
 
-.react-riyils-viewer__progress-container:hover .react-riyils-viewer__progress-thumb {
-  transform: translate(-50%, -50%) scale(1.2);
+.react-riyils-viewer__progress-container:hover .react-riyils-viewer__progress-input::-webkit-slider-thumb {
+  width: 12px;
+  height: 12px;
+  opacity: 1;
 }
 
-.react-riyils-viewer__progress-fill {
-  height: 100%;
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
-  transition: width 0.1s linear;
-  background: var(--rr-text);
+.react-riyils-viewer__progress-input::-moz-range-thumb {
+  width: 0;
+  height: 0;
+  background: var(--progress-color);
+  border-radius: 50%;
+  border: none;
+  opacity: 0;
+  transition: width 0.2s, height 0.2s, opacity 0.2s;
+}
+
+.react-riyils-viewer__progress-container:hover .react-riyils-viewer__progress-input::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  opacity: 1;
 }
 
 .react-riyils-viewer__gradient-top {
@@ -297,6 +342,7 @@
   background: linear-gradient(to bottom, rgba(0, 0, 0, 0.7) 0%, transparent 100%);
   z-index: var(--z-overlay);
   pointer-events: none;
+  will-change: opacity;
 }
 
 .react-riyils-viewer__gradient-bottom {
@@ -311,6 +357,7 @@
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
+  will-change: opacity;
 }
 
 .react-riyils-viewer__close-container {
@@ -355,7 +402,7 @@
   align-items: center;
   justify-content: center;
   color: rgba(255, 255, 255, 0.9);
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, transform 0.2s ease;
   pointer-events: auto;
 }
 
@@ -447,11 +494,11 @@
 
   0%,
   100% {
-    transform: translate(-50%, 0);
+    transform: translate3d(-50%, 0, 0);
   }
 
   50% {
-    transform: translate(-50%, -10px);
+    transform: translate3d(-50%, -10px, 0);
   }
 }
 
@@ -498,7 +545,7 @@
   position: absolute;
   top: 80px;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate3d(-50%, 0, 0);
   z-index: 35;
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(8px);
@@ -514,12 +561,11 @@
   font-weight: 700;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.3s, transform 0.3s;
+  transition: opacity 0.3s ease;
 }
 
 .react-riyils-viewer__feedback-speed.visible {
   opacity: 1;
-  transform: translate(-50%, 0);
 }
 
 .react-riyils-viewer__feedback-seek {
@@ -593,7 +639,7 @@
   justify-content: center;
   color: var(--rr-text);
   cursor: pointer;
-  transition: all 0.2s var(--rr-bezier);
+  transition: transform 0.2s var(--rr-bezier), background-color 0.2s ease;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
@@ -640,7 +686,7 @@
   position: absolute;
   bottom: 80px;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate3d(-50%, 0, 0);
   z-index: 45;
   pointer-events: none;
   display: flex;
@@ -657,41 +703,4 @@
 .react-riyils-viewer__scroll-hint--hidden {
   opacity: 0;
   animation: none;
-}
-
-.react-riyils-viewer__progress-input {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
-  height: 10px;
-  background: rgba(255, 255, 255, 0.25);
-  cursor: pointer;
-  outline: none;
-  margin: 0;
-  display: block;
-  background-image: linear-gradient(to right, var(--progress-color) var(--progress-width), transparent var(--progress-width));
-}
-
-.react-riyils-viewer__progress-input::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 12px;
-  height: 12px;
-  background: var(--progress-color);
-  border-radius: 50%;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.react-riyils-viewer__progress-container:hover .react-riyils-viewer__progress-input::-webkit-slider-thumb {
-  opacity: 1;
-}
-
-.react-riyils-viewer__progress-input::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
-  background: var(--progress-color);
-  border-radius: 50%;
-  border: none;
-  opacity: 0;
 }

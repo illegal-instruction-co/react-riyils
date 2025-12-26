@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { memo } from 'react'
 import { Play, AlertCircle, RotateCcw } from 'lucide-react'
 import type { ReactRiyilsTranslations } from '../index'
 import { useRiyilsObserver } from '../observe/useRiyilsObserver'
@@ -18,7 +18,7 @@ interface CarouselSlideProps {
     videoId: string
 }
 
-export function CarouselSlide({
+export const CarouselSlide = memo(function CarouselSlide({
     registerRef,
     active,
     shouldLoad,
@@ -37,6 +37,7 @@ export function CarouselSlide({
             type="button"
             className="react-riyils__slide-button"
             onClick={() => {
+                if (disabled) return
                 observer.play(videoId, 'user')
                 onClick()
             }}
@@ -64,7 +65,7 @@ export function CarouselSlide({
                         ref={registerRef}
                         muted
                         playsInline
-                        preload={shouldLoad ? 'auto' : 'metadata'}
+                        preload={shouldLoad ? 'auto' : 'none'}
                         className="react-riyils__video"
                         onError={() => {
                             if (!shouldLoad || !active) return
@@ -85,4 +86,4 @@ export function CarouselSlide({
             </div>
         </button>
     )
-}
+})

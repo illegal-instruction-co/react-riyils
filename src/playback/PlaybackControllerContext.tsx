@@ -9,6 +9,7 @@ export function PlaybackControllerProvider({
     children: React.ReactNode
 }>) {
     const controller = useMemo(() => new PlaybackController(), [])
+
     return (
         <PlaybackControllerContext.Provider value={controller}>
             {children}

@@ -4,7 +4,8 @@ function isTextInput(target: EventTarget | null): boolean {
     return (
         target instanceof HTMLInputElement ||
         target instanceof HTMLTextAreaElement ||
-        target instanceof HTMLSelectElement
+        target instanceof HTMLSelectElement ||
+        (target instanceof HTMLElement && target.isContentEditable)
     )
 }
 
@@ -15,21 +16,24 @@ export function useRiyilsKeyboard(
 ) {
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
+            if (e.isComposing || e.defaultPrevented) return
             if (isTextInput(e.target)) return
 
-            if (e.code === 'Escape') {
-                e.preventDefault()
-                onClose()
-            }
-
-            if (e.code === 'Space') {
-                e.preventDefault()
-                onTogglePlay()
-            }
-
-            if (e.code === 'KeyM') {
-                e.preventDefault()
-                onToggleMute()
+            switch (e.code) {
+                case 'Escape':
+                    e.preventDefault()
+                    onClose()
+                    break
+                case 'Space':
+                case 'k':
+                case 'K':
+                    e.preventDefault()
+                    onTogglePlay()
+                    break
+                case 'KeyM':
+                    e.preventDefault()
+                    onToggleMute()
+                    break
             }
         }
 

@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 
 const DOUBLE_TAP_DELAY_MS = 200
 const LONG_PRESS_DELAY_MS = 500
@@ -21,6 +21,13 @@ export function useRiyilsGestures(
     const doubleTapTimer = useRef<number | null>(null)
     const longPressTriggered = useRef(false)
 
+    useEffect(() => {
+        return () => {
+            if (longPressTimer.current) globalThis.window.clearTimeout(longPressTimer.current)
+            if (doubleTapTimer.current) globalThis.window.clearTimeout(doubleTapTimer.current)
+        }
+    }, [])
+
     const clearTimer = (ref: React.MutableRefObject<number | null>) => {
         if (ref.current !== null) {
             globalThis.window.clearTimeout(ref.current)
@@ -32,6 +39,7 @@ export function useRiyilsGestures(
         if (disabled) return
         longPressTriggered.current = false
         clearTimer(longPressTimer)
+
         longPressTimer.current = globalThis.window.setTimeout(() => {
             longPressTriggered.current = true
             onIntent({ type: 'speed-start' })
@@ -41,7 +49,10 @@ export function useRiyilsGestures(
 
     const onStopSpeed = useCallback(() => {
         clearTimer(longPressTimer)
-        onIntent({ type: 'speed-stop' })
+        if (longPressTriggered.current) {
+            onIntent({ type: 'speed-stop' })
+            longPressTriggered.current = false
+        }
     }, [onIntent])
 
     const onZoneClick = useCallback(
@@ -55,6 +66,8 @@ export function useRiyilsGestures(
                 return
             }
 
+            clearTimer(longPressTimer)
+
             const now = Date.now()
             const diff = now - lastTapTime.current
             const isDoubleTap = diff > 0 && diff < DOUBLE_TAP_DELAY_MS
@@ -62,6 +75,7 @@ export function useRiyilsGestures(
 
             if (isDoubleTap) {
                 clearTimer(doubleTapTimer)
+                lastTapTime.current = 0
 
                 if (zone === 'right') {
                     onIntent({
@@ -78,15 +92,12 @@ export function useRiyilsGestures(
                 } else {
                     onIntent({ type: 'toggle-play' })
                 }
-
-                lastTapTime.current = 0
                 return
             }
 
             clearTimer(doubleTapTimer)
             doubleTapTimer.current = globalThis.window.setTimeout(() => {
                 onIntent({ type: 'toggle-play' })
-                lastTapTime.current = 0
                 doubleTapTimer.current = null
             }, DOUBLE_TAP_DELAY_MS)
         },

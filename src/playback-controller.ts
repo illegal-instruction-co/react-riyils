@@ -29,33 +29,49 @@ export class PlaybackController {
     return this.globalToken
   }
 
+  private safePause(video: HTMLVideoElement): void {
+    try {
+      video.pause()
+    } catch { }
+  }
+
   private cancelSession(key: string): void {
     const existing = this.sessions.get(key)
     if (!existing) return
-    existing.video.pause()
+    this.safePause(existing.video)
     this.sessions.delete(key)
   }
 
   cancelAllExcept(key: string): void {
-    Array.from(this.sessions.keys()).forEach((k) => {
+    for (const k of this.sessions.keys()) {
       if (k !== key) this.cancelSession(k)
-    })
+    }
   }
 
   async play(req: PlaybackRequest): Promise<PlaybackResult> {
     const key = buildKey(req.scope, req.id)
+
     this.cancelAllExcept(key)
+
     const token = this.nextToken()
+
     this.cancelSession(key)
+
     this.sessions.set(key, { token, video: req.video })
+
     const result = await playDeterministic(req.video, req.options)
+
     const current = this.sessions.get(key)
+
     if (current?.token !== token) {
+      this.safePause(req.video)
       return 'cancelled'
     }
+
     if (result === 'playing') {
       return 'playing'
     }
+
     this.cancelSession(key)
     return result
   }
@@ -65,6 +81,8 @@ export class PlaybackController {
   }
 
   resetAll(): void {
-    Array.from(this.sessions.keys()).forEach((k) => this.cancelSession(k))
+    for (const k of this.sessions.keys()) {
+      this.cancelSession(k)
+    }
   }
 }

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type RefObject } from 'react'
 import { useRiyilsObserver } from '../observe/useRiyilsObserver'
 
 const PREVIEW_DURATION_MS = 2000
-const RETRY_MS = 120
+const RETRY_MS = 250
 
 type Observer = ReturnType<typeof useRiyilsObserver>
 
@@ -17,7 +17,7 @@ export function useCarouselPlayback(
     const [hasError, setHasError] = useState(false)
     const timerRef = useRef<number | null>(null)
     const retryRef = useRef<number | null>(null)
-    const mountedRef = useRef(false)
+    const mountedRef = useRef(true)
 
     useEffect(() => {
         mountedRef.current = true
@@ -39,6 +39,7 @@ export function useCarouselPlayback(
 
     useEffect(() => {
         const video = videoRef.current
+
         clearTimers()
 
         if (!video || !shouldLoad || hasError) return
@@ -46,51 +47,69 @@ export function useCarouselPlayback(
         video.muted = true
         video.playbackRate = 1
 
+        let isCancelled = false
+
         const tryPlay = async () => {
+            if (isCancelled || !mountedRef.current) return
+
             try {
                 await video.play()
 
-                if (!mountedRef.current || (!isActive && !isPreview)) {
+                if (isCancelled || !mountedRef.current) {
+                    video.pause()
+                    return
+                }
+
+                if (!isActive && !isPreview) {
                     video.pause()
                     return
                 }
 
                 observer.play(videoId, isActive ? 'auto' : 'resume')
-            } catch {
-                if (!mountedRef.current) return
-                retryRef.current = globalThis.window.setTimeout(tryPlay, RETRY_MS)
-                return
-            }
 
-            if (isPreview && !isActive) {
-                timerRef.current = globalThis.window.setTimeout(() => {
-                    if (!mountedRef.current) return
-                    video.pause()
-                    video.currentTime = 0
-                    observer.pause(videoId, 'auto')
-                    retryRef.current = globalThis.window.setTimeout(tryPlay, RETRY_MS)
-                }, PREVIEW_DURATION_MS)
+                if (isPreview && !isActive) {
+                    timerRef.current = globalThis.window.setTimeout(() => {
+                        if (!mountedRef.current || isCancelled) return
+
+                        video.pause()
+                        video.currentTime = 0
+                        observer.pause(videoId, 'auto')
+
+                        retryRef.current = globalThis.window.setTimeout(tryPlay, RETRY_MS)
+                    }, PREVIEW_DURATION_MS)
+                }
+
+            } catch (err) {
+                if (isCancelled || !mountedRef.current) return
+
+                console.error('Video play error:', err);
+
+                retryRef.current = globalThis.window.setTimeout(tryPlay, RETRY_MS)
             }
         }
 
         if (isActive || isPreview) {
-            tryPlay()
+            void tryPlay()
         } else {
             video.pause()
             video.currentTime = 0
             observer.pause(videoId, 'auto')
         }
 
-        return clearTimers
+        return () => {
+            isCancelled = true
+            clearTimers()
+            if (video && !video.paused) {
+                video.pause()
+            }
+        }
     }, [videoRef, videoId, isActive, isPreview, shouldLoad, hasError, observer])
 
     useEffect(() => {
         if (!hasError && shouldLoad && isActive) {
             const v = videoRef.current
             if (!v) return
-
-            v.play().catch(() => {
-            })
+            v.play().catch(() => { })
         }
     }, [hasError, shouldLoad, isActive, videoRef])
 
@@ -110,7 +129,6 @@ export function useCarouselPlayback(
             if (!video) return
 
             video.load()
-            observer.play(videoId, 'user')
         },
     }
 }

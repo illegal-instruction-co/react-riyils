@@ -1,14 +1,8 @@
 import { useEffect, useRef } from 'react'
 
-let unlocked = false
+import { isIosSafari } from '../utils'
 
-function isIosSafari(): boolean {
-    if (typeof navigator === 'undefined') return false
-    const ua = navigator.userAgent
-    const isIOS = /iPad|iPhone|iPod/.test(ua)
-    const isSafari = /Safari/.test(ua) && !/CriOS|FxiOS/.test(ua)
-    return isIOS && isSafari
-}
+let unlocked = false
 
 export function useIosAutoplayUnlock(containerRef: React.RefObject<HTMLElement | null>) {
     const armedRef = useRef(false)
@@ -22,20 +16,23 @@ export function useIosAutoplayUnlock(containerRef: React.RefObject<HTMLElement |
             if (unlocked) return
             unlocked = true
             armedRef.current = false
+
+            const audio = new Audio()
+            audio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAgZGF0YQQAAAAAAA=='
+            audio.play().catch(() => { })
+
             cleanup()
         }
 
         const cleanup = () => {
-            el.removeEventListener('touchstart', unlock)
-            el.removeEventListener('mousedown', unlock)
-            el.removeEventListener('click', unlock)
+            el.removeEventListener('touchstart', unlock, true)
+            el.removeEventListener('click', unlock, true)
         }
 
         if (!armedRef.current) {
             armedRef.current = true
-            el.addEventListener('touchstart', unlock, { passive: true })
-            el.addEventListener('mousedown', unlock)
-            el.addEventListener('click', unlock)
+            el.addEventListener('touchstart', unlock, { passive: true, capture: true })
+            el.addEventListener('click', unlock, { capture: true })
         }
 
         return cleanup

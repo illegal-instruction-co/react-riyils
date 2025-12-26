@@ -1,17 +1,11 @@
 import { useEffect, useRef, useCallback } from 'react'
 
+import { isIosSafari } from '../utils'
+
 interface IosSafariGuardOptions {
     getActiveId: () => string | undefined
     onReset: () => void
     onRetry: () => void
-}
-
-function isIosSafari(): boolean {
-    if (typeof navigator === 'undefined') return false
-    const ua = navigator.userAgent
-    const isIOS = /iPad|iPhone|iPod/.test(ua)
-    const isSafari = /Safari/.test(ua) && !/CriOS|FxiOS/.test(ua)
-    return isIOS && isSafari
 }
 
 export function useIosSafariGuard({
@@ -20,23 +14,40 @@ export function useIosSafariGuard({
     onRetry,
 }: IosSafariGuardOptions) {
     const lastRetryTs = useRef(0)
+    const rafRef = useRef<number | null>(null)
+    const mountedRef = useRef(true)
+
+    useEffect(() => {
+        mountedRef.current = true
+        return () => {
+            mountedRef.current = false
+            if (rafRef.current) cancelAnimationFrame(rafRef.current)
+        }
+    }, [])
 
     const safeRetry = useCallback(() => {
         const now = Date.now()
         if (now - lastRetryTs.current < 300) return
         lastRetryTs.current = now
-        onRetry()
+
+        if (mountedRef.current) {
+            onRetry()
+        }
     }, [onRetry])
 
     useEffect(() => {
         if (!isIosSafari()) return
 
         const handleReset = () => {
+            if (!mountedRef.current) return
             if (getActiveId()) onReset()
         }
 
         const handleRetry = () => {
-            requestAnimationFrame(() => {
+            if (rafRef.current) cancelAnimationFrame(rafRef.current)
+
+            rafRef.current = requestAnimationFrame(() => {
+                if (!mountedRef.current) return
                 if (getActiveId()) safeRetry()
             })
         }
@@ -49,9 +60,8 @@ export function useIosSafariGuard({
             }
         }
 
-        const onPageHide = () => {
-            handleReset()
-        }
+        const onPageHide = () => handleReset()
+        const onPageShow = () => handleRetry()
 
         const onOrientationChange = () => {
             handleReset()
@@ -60,14 +70,15 @@ export function useIosSafariGuard({
 
         document.addEventListener('visibilitychange', onVisibilityChange)
         globalThis.window.addEventListener('pagehide', onPageHide)
-        globalThis.window.addEventListener('pageshow', handleRetry)
+        globalThis.window.addEventListener('pageshow', onPageShow)
         globalThis.window.addEventListener('orientationchange', onOrientationChange)
 
         return () => {
             document.removeEventListener('visibilitychange', onVisibilityChange)
             globalThis.window.removeEventListener('pagehide', onPageHide)
-            globalThis.window.removeEventListener('pageshow', handleRetry)
+            globalThis.window.removeEventListener('pageshow', onPageShow)
             globalThis.window.removeEventListener('orientationchange', onOrientationChange)
+            if (rafRef.current) cancelAnimationFrame(rafRef.current)
         }
     }, [getActiveId, onReset, safeRetry])
 }

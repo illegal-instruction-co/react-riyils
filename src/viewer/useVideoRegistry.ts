@@ -1,7 +1,13 @@
-import { useCallback, useRef } from 'react'
+import { useCallback, useRef, useEffect } from 'react'
 
 export function useVideoRegistry() {
     const videoRefs = useRef<Map<number, HTMLVideoElement>>(new Map())
+
+    useEffect(() => {
+        return () => {
+            videoRefs.current.clear()
+        }
+    }, [])
 
     const register = useCallback(
         (index: number) => (el: HTMLVideoElement | null) => {
@@ -19,9 +25,11 @@ export function useVideoRegistry() {
     }, [])
 
     const stopAllExcept = useCallback((active: number) => {
-        videoRefs.current.forEach((video, idx) => {
-            if (idx !== active) video.pause()
-        })
+        for (const [idx, video] of videoRefs.current) {
+            if (idx !== active) {
+                video.pause()
+            }
+        }
     }, [])
 
     return {

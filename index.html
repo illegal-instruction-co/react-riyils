@@ -385,28 +385,6 @@
       margin: 0 auto;
     }
 
-    .frame {
-      position: relative;
-      border-radius: 28px;
-      border: 1px solid var(--border);
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.56));
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
-      box-shadow: var(--shadow);
-      padding: 14px;
-      overflow: hidden;
-    }
-
-    .frame::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(circle at 18% 12%, rgba(2, 132, 199, 0.14), transparent 38%),
-        radial-gradient(circle at 78% 28%, rgba(99, 102, 241, 0.12), transparent 42%);
-      opacity: 0.8;
-      pointer-events: none;
-    }
-
     .frameInner {
       position: relative;
       border-radius: 22px;
@@ -719,49 +697,47 @@
 
             <section className="container stage" aria-label="Demo">
               <div className="stageGlow" aria-hidden="true"></div>
-
               <div className="viewerWrap">
-                <div className="frame">
-                  <div className="hud" aria-hidden="true">
-                    <span className="hudDot"></span>
-                    <span className="hudText">
-                      {(() => {
-                        let network = (() => {
-                          if (!navigator.onLine) return "Offline";
-                          if (navigator.connection && navigator.connection.effectiveType) {
-                            const type = navigator.connection.effectiveType;
-                            switch (type) {
-                              case 'slow-2g': return 'Slow 2G';
-                              case '2g': return '2G';
-                              case '3g': return '3G';
-                              case '4g': return '4G';
-                              default: return type;
-                            }
+                <div className="hud" aria-hidden="true">
+                  <span className="hudDot"></span>
+                  <span className="hudText">
+                    {(() => {
+                      let network = (() => {
+                        if (!navigator.onLine) return "Offline";
+                        if (navigator.connection && navigator.connection.effectiveType) {
+                          const type = navigator.connection.effectiveType;
+                          switch (type) {
+                            case 'slow-2g': return 'Slow 2G';
+                            case '2g': return '2G';
+                            case '3g': return '3G';
+                            case '4g': return '4G';
+                            default: return type;
                           }
-                          return 'Unknown';
-                        })();
-                        let autoplay = (typeof window !== 'undefined' && window.HTMLMediaElement && typeof window.HTMLMediaElement.prototype.play === 'function') ? "Allowed" : "Blocked";
-                        return `Network: ${network} · Autoplay: ${autoplay}`;
-                      })()}
-                    </span>
-                  </div>
-
-                  <div className="hudRight" aria-hidden="true">
-                    {`Buffered: ${videos.length - index - 1} ahead`}
-                  </div>
-
-                  <div className="frameInner">
-                    <ReactRiyils
-                      videos={videos}
-                      currentIndex={index}
-                      onVideoChange={setIndex}
-                      onVideoClick={() => setViewer(true)}
-                      containerHeightDesktop={520}
-                      containerHeightMobile={520}
-                      enableAutoAdvance
-                    />
-                  </div>
+                        }
+                        return 'Unknown';
+                      })();
+                      let autoplay = (typeof window !== 'undefined' && window.HTMLMediaElement && typeof window.HTMLMediaElement.prototype.play === 'function') ? "Allowed" : "Blocked";
+                      return `Network: ${network} · Autoplay: ${autoplay}`;
+                    })()}
+                  </span>
                 </div>
+
+                <div className="hudRight" aria-hidden="true">
+                  {`Buffered: ${videos.length - index - 1} ahead`}
+                </div>
+
+                <div className="frameInner">
+                  <ReactRiyils
+                    videos={videos}
+                    currentIndex={index}
+                    onVideoChange={setIndex}
+                    onVideoClick={() => setViewer(true)}
+                    containerHeightDesktop={520}
+                    containerHeightMobile={520}
+                    enableAutoAdvance
+                  />
+                </div>
+
               </div>
 
               <div className="stats" aria-label="Stats">
