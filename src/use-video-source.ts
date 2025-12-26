@@ -1,5 +1,5 @@
 import { useEffect, useMemo, type RefObject } from 'react'
-import Hls from 'hls.js'
+import Hls, { type HlsConfig } from 'hls.js'
 import { isIosSafari } from './utils'
 
 export interface VideoQualityVariants {
@@ -11,6 +11,8 @@ export interface VideoQualityVariants {
 type ConnectionInfo = {
     saveData?: boolean
     effectiveType?: string
+    downlink?: number
+    rtt?: number
 }
 
 function getConnection(): ConnectionInfo | null {
@@ -19,9 +21,14 @@ function getConnection(): ConnectionInfo | null {
     return nav.connection as ConnectionInfo
 }
 
-function isSlowConnection(connection: ConnectionInfo | null): boolean {
-    const effectiveType = connection?.effectiveType ?? ''
-    return connection?.saveData === true || ['slow-2g', '2g', '3g'].includes(effectiveType)
+function getInitialBandwidthEstimate(): number {
+    const connection = getConnection()
+    if (!connection) return 1000000
+
+    if (connection.saveData) return 200000
+
+    const downlink = connection.downlink || 1.5
+    return Math.floor(downlink * 1000000 * 0.8)
 }
 
 function isSmallScreen(): boolean {
@@ -29,9 +36,11 @@ function isSmallScreen(): boolean {
 }
 
 function selectOptimalSource(variants: VideoQualityVariants): string | undefined {
-    const connection = getConnection()
-    const preferLow = isSlowConnection(connection) || isSmallScreen()
-    if (preferLow) return variants.low || variants.mid || variants.high
+    const bandwidth = getInitialBandwidthEstimate()
+    const isMobile = isSmallScreen()
+
+    if (bandwidth < 500000 || isMobile) return variants.low || variants.mid || variants.high
+    if (bandwidth < 2000000) return variants.mid || variants.high || variants.low
     return variants.high || variants.mid || variants.low
 }
 
@@ -43,6 +52,31 @@ function resolveFinalUrl(src: string | VideoQualityVariants | undefined): string
 
 function isHlsUrl(url: string): boolean {
     return url.includes('.m3u8')
+}
+
+function getHlsConfig(): Partial<HlsConfig> {
+    const initialBw = getInitialBandwidthEstimate()
+
+    return {
+        autoStartLoad: true,
+        capLevelToPlayerSize: true,
+        enableWorker: true,
+
+        abrEwmaDefaultEstimate: initialBw,
+        startLevel: -1,
+
+        maxBufferLength: 30,
+        maxMaxBufferLength: 60,
+        maxBufferHole: 0.5,
+
+        fragLoadingTimeOut: 10000,
+        manifestLoadingTimeOut: 10000,
+
+        abrBandWidthFactor: 0.9,
+        abrBandWidthUpFactor: 0.7,
+
+        liveSyncDurationCount: 3,
+    }
 }
 
 async function sleep(ms: number): Promise<void> {
@@ -216,11 +250,7 @@ class VideoSourceManager {
 
         let hls: Hls | null = null
         if (isHlsUrl(url) && Hls.isSupported()) {
-            hls = new Hls({
-                autoStartLoad: true,
-                capLevelToPlayerSize: true,
-                enableWorker: true
-            })
+            hls = new Hls(getHlsConfig())
             hls.loadSource(url)
         }
 
