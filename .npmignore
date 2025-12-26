@@ -9,3 +9,4 @@ rollup.config.js
 node_modules/
 *.tsbuildinfo
 TODO
+summary.txt
