@@ -69,6 +69,11 @@ export function useRiyilsPlayback(
 
         if (!video.src && video.readyState === 0) return
 
+        if (video.readyState === 0) {
+            video.load()
+            return
+        }
+
         const token = playTokenRef.current + 1
         playTokenRef.current = token
 

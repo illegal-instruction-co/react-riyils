@@ -435,7 +435,11 @@ function RiyilsViewerInner({
       preloadAround(nextIndex)
       onVideoChange?.(nextIndex)
       const nextVideo = getVideoEl(nextIndex)
-      if (nextVideo) nextVideo.currentTime = 0
+      if (nextVideo) {
+        nextVideo.pause()
+        nextVideo.currentTime = 0
+        nextVideo.load()
+      }
     },
     [getVideoEl, onVideoChange, preloadAround, registry]
   )

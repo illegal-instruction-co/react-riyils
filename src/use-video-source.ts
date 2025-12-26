@@ -44,6 +44,12 @@ function isHlsUrl(url: string): boolean {
     return url.includes('.m3u8');
 }
 
+function isIosSafari(): boolean {
+    if (typeof navigator === 'undefined') return false
+    const ua = navigator.userAgent
+    return /iPad|iPhone|iPod/.test(ua) && /Safari/.test(ua) && !/CriOS|FxiOS/.test(ua)
+}
+
 async function sleep(ms: number): Promise<void> {
     await new Promise<void>((r) => globalThis.window.setTimeout(r, ms));
 }
@@ -260,20 +266,24 @@ export function useVideoSource(
     const key = useMemo(() => buildKey(scope, id), [scope, id]);
 
     useEffect(() => {
-        const video = videoRef.current;
-        if (!video) return;
+        const video = videoRef.current
+        if (!video) return
 
         if (!shouldLoad || !src) {
-            videoSourceManager.detach(key, video);
-            return;
+            if (!isIosSafari()) {
+                videoSourceManager.detach(key, video)
+            }
+            return
         }
 
-        videoSourceManager.attach(video, key, src);
+        videoSourceManager.attach(video, key, src)
 
         return () => {
-            videoSourceManager.detach(key, video);
-        };
-    }, [key, shouldLoad, src, videoRef]);
+            if (!isIosSafari()) {
+                videoSourceManager.detach(key, video)
+            }
+        }
+    }, [key, shouldLoad, src, videoRef])
 
     return finalUrl;
 }
