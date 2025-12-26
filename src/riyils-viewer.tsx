@@ -545,11 +545,15 @@ function RiyilsViewerInner({
           swiperRef.current = s
         }}
         onSlideChange={handleSlideChange}
-        threshold={10}
-        speed={400}
-        keyboard={{ enabled: true }}
-        mousewheel={{ enabled: true, thresholdDelta: 50 }}
+        speed={500}
+        mousewheel={{
+          enabled: true,
+          eventsTarget: ".react-riyils-viewer",
+          thresholdDelta: 20,
+          forceToAxis: true
+        }}
         virtual={{ enabled: true, addSlidesBefore: 1, addSlidesAfter: 2 }}
+        style={{ height: '100%', width: '100%' }}
       >
         {videos.map((video, index) => (
           <SwiperSlide key={video.id} virtualIndex={index} className="react-riyils-viewer__slide">
