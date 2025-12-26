@@ -67,6 +67,7 @@ export function CarouselSlide({
                         preload={shouldLoad ? 'auto' : 'metadata'}
                         className="react-riyils__video"
                         onError={() => {
+                            if (!shouldLoad || !active) return
                             observer.error(videoId, 'decode')
                             onError()
                         }}

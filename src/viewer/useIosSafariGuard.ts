@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef, useCallback } from 'react'
 
 interface IosSafariGuardOptions {
     getActiveId: () => string | undefined
@@ -19,6 +19,15 @@ export function useIosSafariGuard({
     onReset,
     onRetry,
 }: IosSafariGuardOptions) {
+    const lastRetryTs = useRef(0)
+
+    const safeRetry = useCallback(() => {
+        const now = Date.now()
+        if (now - lastRetryTs.current < 300) return
+        lastRetryTs.current = now
+        onRetry()
+    }, [onRetry])
+
     useEffect(() => {
         if (!isIosSafari()) return
 
@@ -28,7 +37,7 @@ export function useIosSafariGuard({
 
         const handleRetry = () => {
             requestAnimationFrame(() => {
-                if (getActiveId()) onRetry()
+                if (getActiveId()) safeRetry()
             })
         }
 
@@ -60,5 +69,5 @@ export function useIosSafariGuard({
             globalThis.window.removeEventListener('pageshow', handleRetry)
             globalThis.window.removeEventListener('orientationchange', onOrientationChange)
         }
-    }, [getActiveId, onReset, onRetry])
+    }, [getActiveId, onReset, safeRetry])
 }

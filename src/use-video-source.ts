@@ -154,12 +154,13 @@ export async function playDeterministic(
 }
 
 export function detachMedia(video: HTMLVideoElement): void {
-    if (video.src) {
-        video.src = '';
+    try {
+        video.pause();
+        video.removeAttribute('src');
+        video.load();
+    } catch {
     }
-    video.load();
 }
-
 type Entry = {
     url: string;
     hls: Hls | null;

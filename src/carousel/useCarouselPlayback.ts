@@ -68,6 +68,16 @@ export function useCarouselPlayback(
         return clearTimers
     }, [videoRef, videoId, isActive, isPreview, shouldLoad, hasError, observer])
 
+    useEffect(() => {
+        if (!hasError && shouldLoad && isActive) {
+            const v = videoRef.current
+            if (!v) return
+
+            v.play().catch(() => {
+            })
+        }
+    }, [hasError, shouldLoad, isActive, videoRef])
+
     return {
         hasError,
         onError: () => {
@@ -76,8 +86,14 @@ export function useCarouselPlayback(
         },
         retry: () => {
             setHasError(false)
-            videoRef.current?.load()
             observer.retry(videoId)
+
+            const video = videoRef.current
+            if (!video) return
+
+            video.load()
+
+            observer.play(videoId, 'user')
         },
     }
 }

@@ -88,11 +88,12 @@ function useLockBodyScroll(): void {
   }, [])
 }
 
-type PlaybackState = {
+export type PlaybackState = {
   isMuted: boolean
   isSpeedUp: boolean
   isPlaying: boolean
   hasError: boolean
+  hasStarted: boolean
   enableAutoAdvance: boolean
 }
 
@@ -259,29 +260,43 @@ function VideoEl({
 
   useVideoSource(videoRef, 'viewer', video.id, video.videoUrl, shouldLoad)
 
+  const showLoading =
+    active &&
+    !playback.hasError &&
+    (!videoRef.current || videoRef.current.readyState < 2)
+
   return (
-    <video
-      ref={(el) => {
-        handlers.registerVideo(index)(el)
-        videoRef.current = el
-      }}
-      className={`react-riyils-viewer__video ${active ? 'active' : 'react-riyils-viewer__video-buffer'}`}
-      playsInline
-      loop={!playback.enableAutoAdvance}
-      muted={playback.isMuted}
-      autoPlay={active}
-      poster={video.thumbnailUrl}
-      onTimeUpdate={active ? handlers.onTimeUpdate : undefined}
-      onEnded={active ? handlers.onEnded : undefined}
-      onError={active ? handlers.onError : undefined}
-      onContextMenu={active ? handlers.onContextMenu : undefined}
-      disablePictureInPicture
-      disableRemotePlayback
-      aria-label={active ? activeAriaLabel : undefined}
-      tabIndex={-1}
-    >
-      <track kind="captions" src={video.captionUrl || ''} label="English" />
-    </video>
+    <div className="react-riyils-viewer__video-wrapper">
+      <video
+        ref={(el) => {
+          handlers.registerVideo(index)(el)
+          videoRef.current = el
+        }}
+        className={`react-riyils-viewer__video ${active ? 'active' : 'react-riyils-viewer__video-buffer'
+          }`}
+        playsInline
+        loop={!playback.enableAutoAdvance}
+        muted={playback.isMuted}
+        autoPlay={active}
+        poster={video.thumbnailUrl}
+        onTimeUpdate={active ? handlers.onTimeUpdate : undefined}
+        onEnded={active ? handlers.onEnded : undefined}
+        onError={active ? handlers.onError : undefined}
+        onContextMenu={active ? handlers.onContextMenu : undefined}
+        disablePictureInPicture
+        disableRemotePlayback
+        aria-label={active ? activeAriaLabel : undefined}
+        tabIndex={-1}
+      >
+        <track kind="captions" src={video.captionUrl || ''} label="English" />
+      </video>
+
+      {showLoading && (
+        <div className="react-riyils-viewer__loading">
+          <div className="react-riyils-viewer__spinner" />
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -342,18 +357,6 @@ function RiyilsViewerInner({
     playbackHandlers.togglePlay()
     showPlayPauseOnce()
   }, [playbackHandlers, playbackState.hasError, showPlayPauseOnce])
-
-  const handleSeek = useCallback(
-    (deltaSeconds: number) => {
-      const v = getVideoEl(currentIndex)
-      if (!v || playbackState.hasError) return
-      const max = v.duration > 0 ? v.duration : Number.MAX_SAFE_INTEGER
-      v.currentTime = clamp(v.currentTime + deltaSeconds, 0, max)
-      setSeekFeedback(deltaSeconds > 0 ? 'forward' : 'rewind')
-      globalThis.window.setTimeout(() => setSeekFeedback(null), FEEDBACK_ANIMATION_MS)
-    },
-    [currentIndex, getVideoEl, playbackState.hasError]
-  )
 
   const handleGestureIntent = useCallback(
     (intent: GestureIntent) => {
