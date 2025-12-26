@@ -1,42 +1,39 @@
 # React Riyils
 
-**The most performant React component for Instagram-like reels, stories, and vertical video feeds.**
+A React component for vertical video feeds (Reels/Stories style) with a carousel + fullscreen viewer, built on Swiper.
+Includes MP4 quality selection and optional HLS playback via hls.js.
 
-Check out the live demo here: [**Demo**](https://illegal-instruction-co.github.io/react-riyils)
+Live demo: [https://illegal-instruction-co.github.io/react-riyils](https://illegal-instruction-co.github.io/react-riyils)
 
-React Riyils helps you add mobile-friendly, touch-enabled video carousels and fullscreen viewers to your web projects.
-It goes beyond simple playback by offering **Smart Quality Selection** and **HLS Support** out of the box.
+## Why this exists
 
----
+I couldn’t find a small, open-source, React-first vertical video swiper that:
+
+* works on mobile and desktop,
+* supports both MP4 and HLS,
+* and handles real-world constraints like preloading, cleanup, and safe playback attempts.
+
+React Riyils is a pragmatic component, not a full video SDK.
 
 ## Features
 
-- **Mobile-first**  
-  Fully responsive touch gestures (swipe, tap to pause, double tap to seek)
+* Vertical swipe viewer and a coverflow-style carousel
+* MP4 or HLS (.m3u8) sources
+* MP4 quality variants (low/mid/high) selected from device + network hints
+* Virtualized slides for performance
+* Keyboard support (carousel + viewer)
+* Retry UI on playback errors
+* TypeScript types and translation hooks
 
-- **HLS Support**  
-  Native support for `.m3u8` streaming via `hls.js`
+## Non-goals
 
-- **Smart MP4 Selection**  
-  Automatically serves low, mid, or high quality MP4s based on network speed and device
+This project does not aim to be:
 
-- **High Performance**  
-  Virtualized slides, infinite scroll, and dynamic loading
+* a DRM solution,
+* a fully featured video analytics platform,
+* a replacement for native mobile video SDKs.
 
-- **Customizable**  
-  TypeScript support, custom translations, and flexible styling
-
----
-
-## Who is this for?
-
-React Riyils is designed for:
-- Media-heavy SaaS applications
-- Education platforms
-- Content & video-based products
-- Mid-scale web projects that need production-ready video playback
-
-It is NOT intended to replace native video SDKs or DRM-based streaming solutions.
+Autoplay behavior is browser-dependent. Some platforms require user interaction to start playback with sound, and some may block playback entirely under certain conditions.
 
 ## Installation
 
@@ -44,63 +41,74 @@ It is NOT intended to replace native video SDKs or DRM-based streaming solutions
 npm install react-riyils
 ```
 
----
+## Basic usage
 
-## Usage
-
-### 1. Basic Usage
-
-Import the components and styles.
+Import the components and the stylesheet.
 
 ```tsx
-import { ReactRiyils, RiyilsViewer } from 'react-riyils';
-import 'react-riyils/dist/index.css';
-import { useState } from 'react';
-```
+import { useState } from 'react'
+import { ReactRiyils, RiyilsViewer, type Video } from 'react-riyils'
+import 'react-riyils/dist/index.css'
 
-```tsx
-const videos = [
+const videos: Video[] = [
   { id: '1', videoUrl: 'https://example.com/video.mp4' },
   { id: '2', videoUrl: 'https://example.com/stream.m3u8' },
-];
+]
 
-function App() {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [showViewer, setShowViewer] = useState(false);
+export default function App() {
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [open, setOpen] = useState(false)
 
   return (
     <>
       <ReactRiyils
         videos={videos}
         currentIndex={currentIndex}
-        onVideoClick={() => setShowViewer(true)}
+        onVideoClick={() => setOpen(true)}
         onVideoChange={setCurrentIndex}
       />
 
-      {showViewer && (
+      {open && (
         <RiyilsViewer
           videos={videos}
           initialIndex={currentIndex}
-          onClose={() => setShowViewer(false)}
+          onClose={() => setOpen(false)}
           onVideoChange={setCurrentIndex}
         />
       )}
     </>
-  );
+  )
 }
-
-export default App;
 ```
 
----
+## Video source format
 
-## Smart MP4 Quality Selection
+`videoUrl` supports:
 
-If you do not use HLS but have multiple MP4 qualities, you can provide an object.
-The component automatically selects the best quality based on network speed and device.
+* a direct URL string (MP4 or .m3u8)
+* a quality-variant object for MP4
+
+```ts
+export type VideoQualityVariants = {
+  low?: string
+  mid?: string
+  high?: string
+}
+
+export type Video = {
+  id: string
+  videoUrl: string | VideoQualityVariants
+  thumbnailUrl?: string
+  captionUrl?: string
+}
+```
+
+### MP4 quality variants
+
+If you provide multiple MP4 qualities, React Riyils chooses a source using network/device hints.
 
 ```tsx
-const adaptiveVideos = [
+const videos: Video[] = [
   {
     id: '3',
     videoUrl: {
@@ -109,80 +117,99 @@ const adaptiveVideos = [
       high: 'https://example.com/video_1080p.mp4',
     },
   },
-];
+]
 ```
 
----
+Notes:
 
-## Video Source Format
+* This is a selection step, not adaptive bitrate streaming.
+* If you need true ABR, use HLS.
 
-You can pass either a string or a quality object.
+## Components
 
-| Type | Example | Description |
-|------|--------|-------------|
-| String | `https://.../video.mp4` | Standard MP4 playback |
-| String (HLS) | `https://.../master.m3u8` | Adaptive streaming via HLS.js |
-| Object | `{ low: '...', high: '...' }` | Smart selection based on device and network |
+### ReactRiyils (carousel)
 
----
+A horizontally scrollable carousel with preview playback for the active slide.
 
-## Props
+Props:
 
-### `<ReactRiyils />` (Carousel)
+* `videos: Video[]`
+* `currentIndex?: number`
+* `onVideoClick: (index: number) => void`
+* `onVideoChange: (index: number) => void`
+* `translations?: Partial<ReactRiyilsTranslations>`
+* `containerHeightMobile?: number`
+* `containerHeightDesktop?: number`
+* `enableAutoAdvance?: boolean`
 
-| Prop | Type | Description |
-|------|------|-------------|
-| videos | array | List of video objects |
-| currentIndex | number | Active video index |
-| onVideoClick | function | Triggered on video click |
-| onVideoChange | function | Triggered when active video changes |
-| translations | object | Optional custom UI text |
-| containerHeightMobile | number | Optional mobile height (px) |
-| containerHeightDesktop | number | Optional desktop height (px) |
- | enableAutoAdvance | boolean | Enable auto-advance to next video when current ends (default: false) |
+Translations:
 
----
+```ts
+export type ReactRiyilsTranslations = {
+  ctaButton: string
+  carouselAriaLabel: string
+  slideActiveAriaLabel: string
+  slideInactiveAriaLabel: string
+}
+```
 
-### `<RiyilsViewer />` (Fullscreen)
+### RiyilsViewer (fullscreen)
 
-| Prop | Type | Description |
-|------|------|-------------|
-| videos | array | List of video objects |
-| initialIndex | number | Starting index |
-| onClose | function | Triggered on close |
-| onVideoChange | function | Triggered when active video changes |
-| translations | object | Optional custom UI text |
-| enableAutoAdvance | boolean | Enable auto-advance to next video when current ends (default: false)
+A fullscreen vertical swiper with gestures and progress UI.
 
----
+Props:
 
-## Customization
+* `videos: Video[]`
+* `initialIndex?: number`
+* `onClose: () => void`
+* `onVideoChange?: (index: number) => void`
+* `translations?: Partial<RiyilsTranslations>`
+* `progressBarColor?: string`
+* `enableAutoAdvance?: boolean`
 
-- **Translations**  
-  Pass a `translations` object to override default UI text
+Translations:
 
-- **Styling**  
-  Override CSS classes such as `.react-riyils__slide-button` for custom designs
+```ts
+export type RiyilsTranslations = {
+  close: string
+  speedIndicator: string
+  forward: string
+  rewind: string
+}
+```
 
----
+## Playback behavior
 
-## Playback Behavior
+* Playback is attempted for the active slide only.
+* Autoplay is attempted with muted fallback when allowed by the browser.
+* If playback fails, the component may surface a paused state or an error overlay depending on the error path.
+* HLS is supported via hls.js when the environment supports it.
 
-- Autoplay attempts with muted fallback
-- Automatic quality selection before playback
-- Graceful recovery from buffering and network stalls
-- Safe unmounting and cleanup on slide changes
+Important: A strict “100% deterministic autoplay” guarantee is not possible on the web across browsers due to platform autoplay policies and power-saving/network conditions. The goal here is predictable best-effort behavior with safe fallback states.
 
-## Observability & Playback Metrics
-Planned metrics include play failures, first frame timing, and stall/recover events.
+## Styling
+
+The package ships with default styles.
+
+You can override CSS classes (examples):
+
+* `.react-riyils__container`
+* `.react-riyils__card`
+* `.react-riyils-viewer`
+* `.react-riyils-viewer__video`
+
+## Roadmap
+
+* Buffering / waiting UI state surfaced as a first-class state
+* Optional telemetry hooks (play failures, first-frame time, stalls)
+* More caption controls (label, language, default enable)
+* Public API contract section with explicit guarantees and undefined behavior
 
 ## License
 
 MIT
 
----
-
 ## Credits
 
-- Built with React and Swiper
-- HLS support powered by hls.js
+* React + Swiper
+* hls.js for HLS playback
