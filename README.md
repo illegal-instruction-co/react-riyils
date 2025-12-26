@@ -1,3 +1,20 @@
+
+
+## Table of Contents
+
+- [Why this exists](#why-this-exists)
+- [What it provides](#what-it-provides)
+- [Features](#features)
+- [Installation](#installation)
+- [Basic usage](#basic-usage)
+- [Video object](#video-object)
+- [Adaptive sources](#adaptive-sources-optional)
+- [Notes on autoplay](#notes-on-autoplay)
+- [Carousel vs Viewer](#carousel-vs-viewer)
+- [Non-goals](#non-goals)
+- [Mental Model](#mental-model)
+
+
 # React Riyils
 
 A small, focused React library for building vertical video carousels and fullscreen viewers.
@@ -163,6 +180,27 @@ Browsers impose strict autoplay rules, especially on mobile.
 
 React Riyils does not try to bypass these rules. Instead, it detects failures, retries safely, and falls back to muted playback when necessary. The goal is to behave predictably rather than force playback.
 
+--- 
+
+## Carousel vs Viewer
+
+React Riyils exposes two video surfaces:
+
+### Carousel
+- Preview-oriented
+- Always muted
+- Short-lived playback
+- Optimized for multiple videos on screen
+
+### Viewer
+- Fullscreen, immersive
+- Gesture-driven
+- Deterministic playback
+- One active video at a time
+
+Both surfaces share the same media engine,
+but apply different playback rules.
+
 ---
 
 ## Non-goals
@@ -171,6 +209,75 @@ React Riyils does not try to bypass these rules. Instead, it detects failures, r
 * Video editing or timelines
 * Opinionated styling systems
 * Social platform abstractions
+
+---
+
+## Mental Model
+
+React Riyils is built around a simple idea:
+
+> At any moment, only one video is allowed to truly play.
+
+Everything else exists to enforce this rule across browsers,
+gestures, autoplay policies, and multiple video surfaces.
+
+To achieve this, the library is split into two distinct layers:
+
+1. Media lifecycle (loading, attaching, detaching sources)
+2. Playback control (who is allowed to play, and when)
+
+Most of the complexity exists to keep this invariant true.
+
+This invariant is enforced internally by a playback controller
+that prevents overlapping or outdated play attempts.
+
+--- 
+
+## Internal Architecture (Optional Reading)
+
+Hooks are grouped by responsibility:
+
+### Media & Source Management
+- useVideoSource
+- useRiyilsPreload
+- useCarouselPreload
+
+### Playback & State
+- useRiyilsPlayback
+- useCarouselPlayback
+- PlaybackController
+
+### Platform Guards
+- useIosSafariGuard
+- useIosAutoplayUnlock
+
+Most users do not need to interact with these directly.
+
+---
+
+## Design Constraints
+
+React Riyils intentionally avoids:
+
+- animation-heavy abstractions
+- CSS-in-JS
+- hidden global state
+- browser-specific hacks without fallback
+
+The goal is correctness first, visuals second.
+
+---
+
+## Who is this for?
+
+React Riyils is intended for developers who need
+a reliable vertical video experience without building
+a full media system from scratch.
+
+It is especially useful when:
+- browser autoplay behavior matters
+- mobile gesture handling is required
+- multiple videos must coexist safely
 
 ---
 
@@ -189,6 +296,14 @@ React Riyils is designed to handle these cases automatically.
 No additional setup or platform-specific code is required.
 
 ---
+
+## Contributions
+
+This project is intentionally small.
+Improvements around edge cases, browser behavior,
+or documentation are welcome.
+
+--- 
 
 ## License
 
