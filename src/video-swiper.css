@@ -234,20 +234,37 @@
 
 .react-riyils-viewer__progress-container {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
+  left: 16px;
+  right: 16px;
+  bottom: calc(var(--rr-safe-bottom) + 16px);
   z-index: 60;
-  width: 100%;
-  height: 10px;
-  background: rgba(255, 255, 255, 0.25);
+  height: 28px;
+  display: flex;
+  align-items: center;
   cursor: pointer;
-  pointer-events: auto;
-  transition: height 0.3s ease;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.react-riyils-viewer__progress-container:hover {
-  height: 8px;
+.react-riyils-viewer__progress-track,
+.react-riyils-viewer__progress-fill {
+  height: 4px;
+  transition: transform 0.2s ease;
+  transform-origin: center;
+}
+
+.react-riyils-viewer__progress-container:hover .react-riyils-viewer__progress-track,
+.react-riyils-viewer__progress-container:hover .react-riyils-viewer__progress-fill {
+  transform: scaleY(1.5);
+}
+
+.react-riyils-viewer__progress-thumb {
+  transform: translate(-50%, -50%) scale(1);
+  transition: transform 0.15s ease;
+}
+
+.react-riyils-viewer__progress-container:hover .react-riyils-viewer__progress-thumb {
+  transform: translate(-50%, -50%) scale(1.2);
 }
 
 .react-riyils-viewer__progress-fill {
@@ -284,19 +301,22 @@
 
 .react-riyils-viewer__close-container {
   position: absolute;
-  top: env(safe-area-inset-top, 80px);
+  top: calc(env(safe-area-inset-top, 16px) + 10px);
   right: 24px;
   z-index: 50;
   pointer-events: auto;
 }
 
 .react-riyils-viewer__controls-row {
+  position: absolute;
+  top: calc(var(--rr-safe-top) + 8px);
+  right: 16px;
+  margin: 0;
+  z-index: 70;
   display: flex;
-  justify-content: flex-end;
-  align-items: flex-end;
-  margin-bottom: 16px;
+  align-items: center;
+  gap: 12px;
   pointer-events: auto;
-  width: 100%;
 }
 
 .react-riyils-viewer__btn {
