@@ -3,6 +3,37 @@ import { usePlaybackController } from '../playback/PlaybackControllerContext'
 import { resetVideoSource } from '../use-video-source'
 
 const PLAY_VERIFY_MS = 260
+const READY_TIMEOUT_MS = 1200
+
+function waitForReady(video: HTMLVideoElement): Promise<boolean> {
+    if (video.readyState >= 2) return Promise.resolve(true)
+
+    return new Promise((resolve) => {
+        let done = false
+
+        const finish = (ok: boolean) => {
+            if (done) return
+            done = true
+            cleanup()
+            resolve(ok)
+        }
+
+        const onReady = () => finish(true)
+        const onError = () => finish(false)
+
+        const cleanup = () => {
+            video.removeEventListener('canplay', onReady)
+            video.removeEventListener('loadeddata', onReady)
+            video.removeEventListener('error', onError)
+        }
+
+        video.addEventListener('canplay', onReady, { once: true })
+        video.addEventListener('loadeddata', onReady, { once: true })
+        video.addEventListener('error', onError, { once: true })
+
+        setTimeout(() => finish(video.readyState >= 2), READY_TIMEOUT_MS)
+    })
+}
 
 export function useRiyilsPlayback(
     getVideoEl: (index: number) => HTMLVideoElement | null,
@@ -32,6 +63,9 @@ export function useRiyilsPlayback(
             video.pause()
             return
         }
+
+        const ready = await waitForReady(video)
+        if (!ready || playTokenRef.current !== token) return
 
         const result = await playbackController.play({
             scope: 'viewer',
@@ -95,11 +129,6 @@ export function useRiyilsPlayback(
         [currentIndex, getVideoEl, hasError]
     )
 
-    const onTimeUpdate = useCallback((e: React.SyntheticEvent<HTMLVideoElement>) => {
-        const v = e.currentTarget
-        if (!v || v.duration <= 0) return
-    }, [])
-
     const onEnded = useCallback(() => {
         if (!enableAutoAdvance) return
         const v = getVideoEl(currentIndex)
@@ -146,7 +175,6 @@ export function useRiyilsPlayback(
             toggleMute,
             setSpeedUp: setIsSpeedUp,
             seek,
-            onTimeUpdate,
             onEnded,
             onError,
             onRetry,

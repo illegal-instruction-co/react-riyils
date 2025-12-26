@@ -22,6 +22,8 @@ import { useRiyilsGestures, type GestureIntent, type GestureZone } from './viewe
 import { useRiyilsKeyboard } from './viewer/useRiyilsKeyboard'
 import { useRiyilsPlayback } from './viewer/useRiyilsPlayback'
 import { useRiyilsPreload } from './viewer/useRiyilsPreload'
+import { useIosSafariGuard } from './viewer/useIosSafariGuard'
+import { useIosAutoplayUnlock } from './viewer/useIosAutoplayUnlock'
 import { PlaybackControllerProvider } from './playback/PlaybackControllerContext'
 
 import 'swiper/css'
@@ -112,21 +114,25 @@ type SlideHandlers = {
   onContextMenu: (e: React.SyntheticEvent) => boolean
 }
 
-const RiyilsSlide = React.memo(function RiyilsSlide(
-  props: Readonly<{
-    video: Video
-    index: number
-    t: RiyilsTranslations
-    ui: SlideUIState
-    playback: PlaybackState
-    activeAriaLabel?: string
-    handlers: SlideHandlers
-  }>
-) {
-  const { video, index, t, ui, playback, activeAriaLabel, handlers } = props
+const RiyilsSlide = React.memo(function RiyilsSlide({
+  video,
+  index,
+  t,
+  ui,
+  playback,
+  activeAriaLabel,
+  handlers,
+}: {
+  video: Video
+  index: number
+  t: RiyilsTranslations
+  ui: SlideUIState
+  playback: PlaybackState
+  activeAriaLabel?: string
+  handlers: SlideHandlers
+}) {
   const mounted = shouldKeepMounted(index, ui.currentIndex)
   const active = index === ui.currentIndex
-  const shouldLoad = mounted
 
   if (!mounted) {
     return (
@@ -222,7 +228,7 @@ const RiyilsSlide = React.memo(function RiyilsSlide(
         video={video}
         index={index}
         active={active}
-        shouldLoad={shouldLoad}
+        shouldLoad={mounted}
         playback={playback}
         activeAriaLabel={active ? activeAriaLabel : undefined}
         handlers={handlers}
@@ -231,18 +237,23 @@ const RiyilsSlide = React.memo(function RiyilsSlide(
   )
 })
 
-function VideoEl(
-  props: Readonly<{
-    video: Video
-    index: number
-    active: boolean
-    shouldLoad: boolean
-    playback: PlaybackState
-    activeAriaLabel?: string
-    handlers: SlideHandlers
-  }>
-) {
-  const { video, index, active, shouldLoad, playback, activeAriaLabel, handlers } = props
+function VideoEl({
+  video,
+  index,
+  active,
+  shouldLoad,
+  playback,
+  activeAriaLabel,
+  handlers,
+}: Readonly<{
+  video: Video
+  index: number
+  active: boolean
+  shouldLoad: boolean
+  playback: PlaybackState
+  activeAriaLabel?: string
+  handlers: SlideHandlers
+}>) {
   const videoRef = useRef<HTMLVideoElement | null>(null)
 
   useVideoSource(videoRef, 'viewer', video.id, video.videoUrl, shouldLoad)
@@ -281,7 +292,7 @@ function RiyilsViewerInner({
   translations = {},
   progressBarColor = '#fff',
   enableAutoAdvance = false,
-}: Readonly<RiyilsViewerProps>) {
+}: RiyilsViewerProps) {
   useLockBodyScroll()
 
   const t = useMemo(() => ({ ...defaultRiyilsTranslations, ...translations }), [translations])
@@ -294,6 +305,8 @@ function RiyilsViewerInner({
   const swiperRef = useRef<SwiperType | null>(null)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const progressBarRef = useRef<ProgressBarRef>(null)
+
+  useIosAutoplayUnlock(containerRef)
 
   const registry = useVideoRegistry()
 
@@ -308,6 +321,12 @@ function RiyilsViewerInner({
     currentIndex,
     enableAutoAdvance
   )
+
+  useIosSafariGuard({
+    getActiveId,
+    onReset: playbackHandlers.onError,
+    onRetry: playbackHandlers.onRetry,
+  })
 
   const showPlayPauseOnce = useCallback(() => {
     setShowPlayPauseIcon(true)
@@ -467,9 +486,7 @@ function RiyilsViewerInner({
   return (
     <div ref={containerRef} className="react-riyils-viewer" style={{ WebkitTouchCallout: 'none' }}>
       <div className="react-riyils-viewer__gradient-top" />
-
       <ProgressBar ref={progressBarRef} color={progressBarColor} />
-
       <div className="react-riyils-viewer__close-container">
         <button
           type="button"
@@ -489,8 +506,6 @@ function RiyilsViewerInner({
           swiperRef.current = s
         }}
         onSlideChange={handleSlideChange}
-        className="h-full w-full"
-        style={{ height: '100%', width: '100%' }}
         threshold={10}
         speed={400}
         keyboard={{ enabled: true }}
@@ -557,7 +572,7 @@ function RiyilsViewerInner({
   )
 }
 
-export function RiyilsViewer(props: Readonly<RiyilsViewerProps>) {
+export function RiyilsViewer(props: RiyilsViewerProps) {
   return (
     <PlaybackControllerProvider>
       <RiyilsViewerInner {...props} />

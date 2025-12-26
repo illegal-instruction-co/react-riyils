@@ -174,6 +174,22 @@ React Riyils does not try to bypass these rules. Instead, it detects failures, r
 
 ---
 
+## Mobile & iOS Safari Notes
+
+Mobile browsers, especially iOS Safari, apply stricter rules to video playback than desktop browsers.
+
+As a result, you may observe behaviors such as:
+- Autoplay starting muted
+- Playback pausing when the page is backgrounded or orientation changes
+- Playback requiring a user interaction on first use
+
+These behaviors are platform constraints rather than configuration issues.
+
+React Riyils is designed to handle these cases automatically.  
+No additional setup or platform-specific code is required.
+
+---
+
 ## License
 
 MIT
