@@ -1,8 +1,8 @@
 :root {
-  --rr-slide-width-mobile: 220px;
-  --rr-slide-height-mobile: 400px;
-  --rr-slide-width-desktop: 300px;
-  --rr-slide-height-desktop: 540px;
+  --rr-slide-w-mob: 220px;
+  --rr-slide-h-mob: 400px;
+  --rr-slide-w-desk: 300px;
+  --rr-slide-h-desk: 540px;
   --rr-primary: #3b82f6;
   --rr-error: #ef4444;
   --rr-bg-card: #000;
@@ -10,10 +10,15 @@
   --rr-bg-overlay-deep: rgba(0, 0, 0, 0.9);
   --rr-glass-bg: rgba(255, 255, 255, 0.15);
   --rr-glass-border: rgba(255, 255, 255, 0.1);
-  --rr-text-main: #ffffff;
-  --rr-transition-bezier: cubic-bezier(0.25, 0.1, 0.25, 1);
-  --rr-safe-bottom: env(safe-area-inset-bottom, 20px);
+  --rr-text: #ffffff;
+  --rr-bezier: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --rr-safe-bot: env(safe-area-inset-bottom, 20px);
   --rr-safe-top: env(safe-area-inset-top, 16px);
+  --z-base: 1;
+  --z-active: 20;
+  --z-ui: 30;
+  --z-overlay: 40;
+  --z-modal: 99999;
 }
 
 .react-riyils__container {
@@ -38,7 +43,7 @@
 .react-riyils {
   width: 100%;
   height: auto;
-  z-index: 1;
+  z-index: var(--z-base);
   overflow: visible !important;
   padding: 0 !important;
 }
@@ -51,24 +56,24 @@
 .react-riyils .swiper-slide {
   background-position: center;
   background-size: cover;
-  width: var(--rr-slide-width-mobile);
-  height: var(--rr-slide-height-mobile);
+  width: var(--rr-slide-w-mob);
+  height: var(--rr-slide-h-mob);
   display: flex;
   justify-content: center;
   align-items: center;
-  transition: all 0.3s var(--rr-transition-bezier);
+  transition: all 0.3s var(--rr-bezier);
   transform-style: preserve-3d;
 }
 
 @media (min-width: 768px) {
   .react-riyils .swiper-slide {
-    width: var(--rr-slide-width-desktop);
-    height: var(--rr-slide-height-desktop);
+    width: var(--rr-slide-w-desk);
+    height: var(--rr-slide-h-desk);
   }
 }
 
 .react-riyils .swiper-slide-active {
-  z-index: 20;
+  z-index: var(--z-active);
 }
 
 .react-riyils__card {
@@ -81,6 +86,7 @@
   filter: brightness(0.7);
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
   transform: translateZ(0);
+  will-change: transform, filter;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   transition: filter 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
@@ -89,7 +95,7 @@
 .react-riyils__card.active {
   filter: brightness(1);
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--rr-glass-border);
-  transform: scale(1.05);
+  transform: scale(1.05) translateZ(0);
 }
 
 .react-riyils__video {
@@ -129,24 +135,25 @@
   bottom: 24px;
   left: 50%;
   width: max-content;
-  z-index: 30;
+  z-index: var(--z-ui);
   opacity: 0;
   pointer-events: none;
-  transform: translateX(-50%) translateY(15px);
-  transition: opacity 0.3s var(--rr-transition-bezier), transform 0.3s var(--rr-transition-bezier);
+  transform: translate(-50%, 15px);
+  transition: opacity 0.3s var(--rr-bezier), transform 0.3s var(--rr-bezier);
 }
 
 .react-riyils__card.active .react-riyils__cta-container {
   opacity: 1;
-  transform: translateX(-50%) translateY(0);
+  transform: translate(-50%, 0);
   pointer-events: auto;
 }
 
 .react-riyils__cta-button {
   background: rgba(20, 20, 20, 0.8);
   backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--rr-glass-border);
-  color: var(--rr-text-main);
+  color: var(--rr-text);
   padding: 12px 24px;
   border-radius: 9999px;
   display: flex;
@@ -190,7 +197,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--rr-text-main);
+  color: var(--rr-text);
   cursor: pointer;
   transition: all 0.2s ease;
   pointer-events: auto;
@@ -204,7 +211,7 @@
 .react-riyils-viewer {
   position: fixed;
   inset: 0;
-  z-index: 99999;
+  z-index: var(--z-modal);
   background-color: var(--rr-bg-card);
   display: flex;
   flex-direction: column;
@@ -243,7 +250,7 @@
   position: absolute;
   left: 16px;
   right: 16px;
-  bottom: calc(var(--rr-safe-bottom) + 16px);
+  bottom: calc(var(--rr-safe-bot) + 16px);
   z-index: 60;
   height: 28px;
   display: flex;
@@ -278,7 +285,7 @@
   height: 100%;
   box-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
   transition: width 0.1s linear;
-  background: var(--rr-text-main);
+  background: var(--rr-text);
 }
 
 .react-riyils-viewer__gradient-top {
@@ -288,7 +295,7 @@
   right: 0;
   height: 150px;
   background: linear-gradient(to bottom, rgba(0, 0, 0, 0.7) 0%, transparent 100%);
-  z-index: 40;
+  z-index: var(--z-overlay);
   pointer-events: none;
 }
 
@@ -297,9 +304,9 @@
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 100px 16px var(--rr-safe-bottom) 16px;
+  padding: 100px 16px var(--rr-safe-bot) 16px;
   background: linear-gradient(to top, var(--rr-bg-overlay-deep) 0%, rgba(0, 0, 0, 0.4) 50%, transparent 100%);
-  z-index: 40;
+  z-index: var(--z-overlay);
   pointer-events: none;
   display: flex;
   flex-direction: column;
@@ -343,7 +350,7 @@
 
 .react-riyils-viewer__btn:hover {
   background: rgba(255, 255, 255, 0.2);
-  color: var(--rr-text-main);
+  color: var(--rr-text);
 }
 
 .react-riyils-viewer__btn:active {
@@ -364,7 +371,7 @@
 .react-riyils-viewer__gesture-overlay {
   position: absolute;
   inset: 0;
-  z-index: 30;
+  z-index: var(--z-ui);
   display: grid;
   grid-template-columns: 40% 20% 40%;
   border: 0;
@@ -427,11 +434,11 @@
 
   0%,
   100% {
-    transform: translateX(-50%) translateY(0);
+    transform: translate(-50%, 0);
   }
 
   50% {
-    transform: translateX(-50%) translateY(-10px);
+    transform: translate(-50%, -10px);
   }
 }
 
@@ -439,7 +446,7 @@
   width: 32px;
   height: 32px;
   border: 3px solid rgba(255, 255, 255, 0.2);
-  border-top-color: var(--rr-text-main);
+  border-top-color: var(--rr-text);
   border-radius: 50%;
   animation: rr-spin 1s linear infinite;
 }
@@ -457,9 +464,10 @@
 .react-riyils-viewer__feedback-icon {
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   padding: 20px;
   border-radius: 50%;
-  color: var(--rr-text-main);
+  color: var(--rr-text);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -481,13 +489,14 @@
   z-index: 35;
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   padding: 8px 16px;
   border-radius: 20px;
   border: 1px solid var(--rr-glass-border);
   display: flex;
   align-items: center;
   gap: 6px;
-  color: var(--rr-text-main);
+  color: var(--rr-text);
   font-size: 13px;
   font-weight: 700;
   opacity: 0;
@@ -497,7 +506,7 @@
 
 .react-riyils-viewer__feedback-speed.visible {
   opacity: 1;
-  transform: translateX(-50%) translateY(0);
+  transform: translate(-50%, 0);
 }
 
 .react-riyils-viewer__feedback-seek {
@@ -524,12 +533,13 @@
   height: 80px;
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border-radius: 50%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: var(--rr-text-main);
+  color: var(--rr-text);
   animation: rr-fade-zoom-in 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
@@ -549,6 +559,7 @@
   justify-content: center;
   background: var(--rr-bg-overlay);
   backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   gap: 24px;
   animation: rr-fade-zoom-in 0.3s ease-out;
 }
@@ -567,9 +578,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--rr-text-main);
+  color: var(--rr-text);
   cursor: pointer;
-  transition: all 0.2s var(--rr-transition-bezier);
+  transition: all 0.2s var(--rr-bezier);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
@@ -592,7 +603,7 @@
   width: 32px;
   height: 32px;
   border: 2px solid rgba(255, 255, 255, 0.25);
-  border-top-color: var(--rr-text-main);
+  border-top-color: var(--rr-text);
   border-radius: 50%;
   animation: rr-spin 0.8s linear infinite;
 }
@@ -645,9 +656,7 @@
   outline: none;
   margin: 0;
   display: block;
-  background-image: linear-gradient(to right,
-      var(--progress-color) var(--progress-width),
-      transparent var(--progress-width));
+  background-image: linear-gradient(to right, var(--progress-color) var(--progress-width), transparent var(--progress-width));
 }
 
 .react-riyils-viewer__progress-input::-webkit-slider-thumb {
