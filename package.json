@@ -1,6 +1,6 @@
 {
   "name": "react-riyils",
-  "version": "2.9.0",
+  "version": "2.10.0",
   "description": "A React component library for creating Instagram/TikTok-style vertical video swiper",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
