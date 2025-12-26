@@ -1,22 +1,26 @@
-import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { Keyboard, Mousewheel, EffectCoverflow, Virtual } from 'swiper/modules';
-import type { Swiper as SwiperType } from 'swiper';
-import { Play, AlertCircle, RotateCcw } from 'lucide-react';
-import { useVideoSource } from './use-video-source';
-import { playbackController } from './playback-controller';
-import { type Video } from './riyils-viewer';
+import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react'
+import { Swiper, SwiperSlide } from 'swiper/react'
+import { Keyboard, Mousewheel, EffectCoverflow, Virtual } from 'swiper/modules'
+import type { Swiper as SwiperType } from 'swiper'
 
-import './video-swiper.css';
-import 'swiper/css';
-import 'swiper/css/effect-coverflow';
-import 'swiper/css/virtual';
+import { useVideoSource } from './use-video-source'
+import type { Video } from './riyils-viewer'
+
+import { CarouselSlide } from './carousel/CarouselSlide'
+import { useCarouselPlayback } from './carousel/useCarouselPlayback'
+import { useCarouselPreload } from './carousel/useCarouselPreload'
+import { useCarouselRegistry } from './carousel/useCarouselRegistry'
+
+import './video-swiper.css'
+import 'swiper/css'
+import 'swiper/css/effect-coverflow'
+import 'swiper/css/virtual'
 
 export interface ReactRiyilsTranslations {
-  ctaButton: string;
-  carouselAriaLabel: string;
-  slideActiveAriaLabel: string;
-  slideInactiveAriaLabel: string;
+  ctaButton: string
+  carouselAriaLabel: string
+  slideActiveAriaLabel: string
+  slideInactiveAriaLabel: string
 }
 
 export const defaultReactRiyilsTranslations: ReactRiyilsTranslations = {
@@ -24,145 +28,76 @@ export const defaultReactRiyilsTranslations: ReactRiyilsTranslations = {
   carouselAriaLabel: 'Video stories',
   slideActiveAriaLabel: 'Watch full video',
   slideInactiveAriaLabel: 'Go to slide',
-};
-
-export interface ReactRiyilsProps {
-  readonly videos: Video[];
-  readonly currentIndex?: number;
-  readonly onVideoClick: (index: number) => void;
-  readonly onVideoChange: (index: number) => void;
-  readonly translations?: Partial<ReactRiyilsTranslations>;
-  readonly containerHeightMobile?: number;
-  readonly containerHeightDesktop?: number;
-  readonly enableAutoAdvance?: boolean;
 }
 
-type SlideItemProps = {
-  video: Video;
-  index: number;
-  isVisualActive: boolean;
-  shouldLoad: boolean;
-  t: ReactRiyilsTranslations;
-  onVideoClick: (idx: number) => void;
-  onEnded?: () => void;
-};
-
-const PREVIEW_VERIFY_MS = 220;
-
-const SlideItem = React.memo(
-  ({ video, isVisualActive, index, onVideoClick, t, shouldLoad, onEnded }: SlideItemProps) => {
-    const videoRef = useRef<HTMLVideoElement | null>(null);
-    const [hasError, setHasError] = useState(false);
-
-    useVideoSource(videoRef, 'carousel', video.id, video.videoUrl, shouldLoad);
-
-    useEffect(() => {
-      setHasError(false);
-    }, [video.id]);
-
-    useEffect(() => {
-      if (!isVisualActive) {
-        setHasError(false);
-      }
-    }, [isVisualActive]);
-
-    useEffect(() => {
-      const el = videoRef.current;
-      if (!el || hasError || !shouldLoad || !isVisualActive) return;
-
-      let cancelled = false;
-
-      const run = async () => {
-        el.muted = true;
-        el.playbackRate = 1;
-        el.currentTime = 0;
-
-        const result = await playbackController.play({
-          scope: 'carousel',
-          id: video.id,
-          video: el,
-          options: {
-            muted: true,
-            playbackRate: 1,
-            allowAutoMute: true,
-            verifyMs: PREVIEW_VERIFY_MS,
-          },
-        });
-
-        if (cancelled) return;
-
-        if (result !== 'playing') {
-          el.pause();
-        }
-      };
-
-      void run();
-
-      return () => {
-        cancelled = true;
-        playbackController.reset('carousel', video.id);
-      };
-    }, [hasError, isVisualActive, shouldLoad, video.id]);
-
-    const handleError = useCallback(() => {
-      setHasError(true);
-    }, []);
-
-    const handleRetry = useCallback((e: React.MouseEvent) => {
-      e.stopPropagation();
-      setHasError(false);
-      videoRef.current?.load();
-    }, []);
-
-    const disabled = isVisualActive && hasError;
-
-    return (
-      <button
-        type="button"
-        className="react-riyils__slide-button"
-        onClick={() => !disabled && onVideoClick(index)}
-        aria-label={isVisualActive ? t.slideActiveAriaLabel : t.slideInactiveAriaLabel}
-        disabled={disabled}
-      >
-        <div className={`react-riyils__card ${isVisualActive ? 'active' : ''}`}>
-          {isVisualActive && hasError ? (
-            <div className="react-riyils__error-container">
-              <AlertCircle size={32} className="react-riyils__error-icon" />
-              <button type="button" className="react-riyils__retry-button" onClick={handleRetry} aria-label="Retry video">
-                <RotateCcw size={20} />
-              </button>
-            </div>
-          ) : (
-            <video
-              ref={videoRef}
-              muted
-              playsInline
-              loop={isVisualActive && !onEnded}
-              className="react-riyils__video"
-              preload={shouldLoad ? 'auto' : 'metadata'}
-              onError={handleError}
-              onEnded={onEnded}
-            />
-          )}
-
-          {isVisualActive && !hasError && (
-            <div className="react-riyils__cta-container">
-              <span className="react-riyils__cta-button">
-                <Play size={14} fill="currentColor" />
-                {t.ctaButton}
-              </span>
-            </div>
-          )}
-        </div>
-      </button>
-    );
-  }
-);
-
-SlideItem.displayName = 'SlideItem';
+export interface ReactRiyilsProps {
+  readonly videos: Video[]
+  readonly currentIndex?: number
+  readonly onVideoClick: (index: number) => void
+  readonly onVideoChange: (index: number) => void
+  readonly translations?: Partial<ReactRiyilsTranslations>
+  readonly containerHeightMobile?: number
+  readonly containerHeightDesktop?: number
+  readonly enableAutoAdvance?: boolean
+}
 
 function shouldPreload(index: number, activeIndex: number): boolean {
-  return Math.abs(index - activeIndex) < 4;
+  return Math.abs(index - activeIndex) < 4
+}
+
+function CarouselSlideContainer({
+  video,
+  index,
+  activeIndex,
+  t,
+  registry,
+  onSlideClick,
+}: Readonly<{
+  video: Video
+  index: number
+  activeIndex: number
+  t: ReactRiyilsTranslations
+  registry: ReturnType<typeof useCarouselRegistry>
+  onSlideClick: (index: number, isActive: boolean) => void
+}>) {
+  const isActive = index === activeIndex
+  const distance = Math.abs(index - activeIndex)
+  const isPreview = !isActive && distance <= 2
+  const shouldLoad = isActive || isPreview || shouldPreload(index, activeIndex)
+
+  const videoRef = useRef<HTMLVideoElement | null>(null)
+
+  const register = useMemo(() => registry.register(video.id), [registry, video.id])
+
+  const registerRef = useCallback(
+    (el: HTMLVideoElement | null) => {
+      register(el)
+      videoRef.current = el
+    },
+    [register]
+  )
+
+  useVideoSource(videoRef, 'carousel', video.id, video.videoUrl, shouldLoad)
+
+  const playback = useCarouselPlayback(
+    videoRef,
+    isActive,
+    isPreview,
+    shouldLoad
+  )
+
+  return (
+    <CarouselSlide
+      registerRef={registerRef}
+      active={isActive}
+      shouldLoad={shouldLoad}
+      hasError={playback.hasError}
+      t={t}
+      onClick={() => onSlideClick(index, isActive)}
+      onRetry={playback.retry}
+      onError={playback.onError}
+    />
+  )
 }
 
 export function ReactRiyils({
@@ -175,10 +110,13 @@ export function ReactRiyils({
   containerHeightDesktop,
   enableAutoAdvance = true,
 }: Readonly<ReactRiyilsProps>) {
-  const swiperRef = useRef<SwiperType | null>(null);
-  const [activeIndex, setActiveIndex] = useState(currentIndex);
+  const swiperRef = useRef<SwiperType | null>(null)
+  const [activeIndex, setActiveIndex] = useState(currentIndex)
 
-  const t = useMemo(() => ({ ...defaultReactRiyilsTranslations, ...translations }), [translations]);
+  const registry = useCarouselRegistry()
+  const preloadAround = useCarouselPreload(videos)
+
+  const t = useMemo(() => ({ ...defaultReactRiyilsTranslations, ...translations }), [translations])
 
   const containerStyle = useMemo(
     () =>
@@ -187,40 +125,48 @@ export function ReactRiyils({
         '--container-height-desktop': containerHeightDesktop ? `${containerHeightDesktop}px` : undefined,
       }) as React.CSSProperties,
     [containerHeightMobile, containerHeightDesktop]
-  );
+  )
 
   useEffect(() => {
-    setActiveIndex(currentIndex);
-    swiperRef.current?.slideTo(currentIndex, 0);
-  }, [currentIndex]);
+    setActiveIndex(currentIndex)
+    swiperRef.current?.slideTo(currentIndex, 0)
+  }, [currentIndex])
+
+  useEffect(() => {
+    preloadAround(activeIndex)
+  }, [activeIndex, preloadAround])
 
   const handleSlideChange = useCallback(
     (swiper: SwiperType) => {
-      const next = swiper.activeIndex;
-      if (next !== activeIndex) {
-        setActiveIndex(next);
-        onVideoChange(next);
-      }
-    },
-    [activeIndex, onVideoChange]
-  );
+      const next = swiper.activeIndex
+      if (next === activeIndex) return
 
-  const handleVideoEnded = useCallback(() => {
-    if (enableAutoAdvance && swiperRef.current && !swiperRef.current.destroyed) {
-      swiperRef.current.slideNext();
-    }
-  }, [enableAutoAdvance]);
+      setActiveIndex(next)
+      onVideoChange(next)
+
+      const nextVideo = videos[next]
+      if (nextVideo) registry.pauseAllExcept(nextVideo.id)
+    },
+    [activeIndex, onVideoChange, registry, videos]
+  )
 
   const handleSlideClick = useCallback(
     (index: number, isActive: boolean) => {
       if (isActive) {
-        onVideoClick(index);
-        return;
+        onVideoClick(index)
+        return
       }
-      swiperRef.current?.slideTo(index);
+      swiperRef.current?.slideTo(index)
     },
     [onVideoClick]
-  );
+  )
+
+  const handleActiveVideoEnded = useCallback(() => {
+    if (!enableAutoAdvance) return
+    const s = swiperRef.current
+    if (!s || s.destroyed) return
+    s.slideNext()
+  }, [enableAutoAdvance])
 
   return (
     <section className="react-riyils__container" style={containerStyle} aria-label={t.carouselAriaLabel}>
@@ -240,7 +186,7 @@ export function ReactRiyils({
           slideShadows: true,
         }}
         onSwiper={(s) => {
-          swiperRef.current = s;
+          swiperRef.current = s
         }}
         onSlideChange={handleSlideChange}
         slidesPerView="auto"
@@ -250,27 +196,60 @@ export function ReactRiyils({
         mousewheel={{ forceToAxis: true }}
         className="react-riyils"
       >
-        {videos.map((video, index) => {
-          const isActive = index === activeIndex;
-          const load = shouldPreload(index, activeIndex);
-
-          return (
-            <SwiperSlide key={video.id} virtualIndex={index}>
-              <SlideItem
-                video={video}
-                index={index}
-                isVisualActive={isActive}
-                shouldLoad={isActive || load}
-                t={t}
-                onVideoClick={(i) => handleSlideClick(i, isActive)}
-                onEnded={isActive && enableAutoAdvance ? handleVideoEnded : undefined}
-              />
-            </SwiperSlide>
-          );
-        })}
+        {videos.map((video, index) => (
+          <SwiperSlide key={video.id} virtualIndex={index}>
+            <CarouselSlideContainer
+              video={video}
+              index={index}
+              activeIndex={activeIndex}
+              t={t}
+              registry={registry}
+              onSlideClick={handleSlideClick}
+            />
+          </SwiperSlide>
+        ))}
       </Swiper>
+
+      <ActiveAutoAdvanceBridge
+        enabled={enableAutoAdvance}
+        registry={registry}
+        videos={videos}
+        activeIndex={activeIndex}
+        onAdvance={handleActiveVideoEnded}
+      />
     </section>
-  );
+  )
+}
+
+function ActiveAutoAdvanceBridge({
+  enabled,
+  registry,
+  videos,
+  activeIndex,
+  onAdvance,
+}: Readonly<{
+  enabled: boolean
+  registry: ReturnType<typeof useCarouselRegistry>
+  videos: Video[]
+  activeIndex: number
+  onAdvance: () => void
+}>) {
+  useEffect(() => {
+    if (!enabled) return
+    const v = videos[activeIndex]
+    if (!v) return
+    const el = registry.get(v.id)
+    if (!el) return
+
+    const handler = () => onAdvance()
+    el.addEventListener('ended', handler)
+
+    return () => {
+      el.removeEventListener('ended', handler)
+    }
+  }, [enabled, registry, videos, activeIndex, onAdvance])
+
+  return null
 }
 
 export {
@@ -279,4 +258,4 @@ export {
   type Video,
   type RiyilsTranslations,
   type RiyilsViewerProps,
-} from './riyils-viewer';
+} from './riyils-viewer'
