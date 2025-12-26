@@ -239,7 +239,7 @@
   right: 0;
   z-index: 60;
   width: 100%;
-  height: 4px;
+  height: 10px;
   background: rgba(255, 255, 255, 0.25);
   cursor: pointer;
   pointer-events: auto;
@@ -508,7 +508,7 @@
 .react-riyils-viewer__seek-text {
   font-size: 11px;
   font-weight: 700;
-  margin-top: 4px;
+  margin-top: 44px;
 }
 
 .react-riyils-viewer__error-overlay {
@@ -611,7 +611,7 @@
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
-  height: 4px;
+  height: 10px;
   background: rgba(255, 255, 255, 0.25);
   cursor: pointer;
   outline: none;
