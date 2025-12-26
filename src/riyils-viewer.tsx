@@ -25,6 +25,7 @@ import { useRiyilsPreload } from './viewer/useRiyilsPreload'
 import { useIosSafariGuard } from './viewer/useIosSafariGuard'
 import { useIosAutoplayUnlock } from './viewer/useIosAutoplayUnlock'
 import { PlaybackControllerProvider } from './playback/PlaybackControllerContext'
+import { useRiyilsObserver } from './observe/useRiyilsObserver'
 
 import 'swiper/css'
 import 'swiper/css/virtual'
@@ -295,6 +296,8 @@ function RiyilsViewerInner({
 }: RiyilsViewerProps) {
   useLockBodyScroll()
 
+  const observer = useRiyilsObserver('viewer')
+
   const t = useMemo(() => ({ ...defaultRiyilsTranslations, ...translations }), [translations])
 
   const [currentIndex, setCurrentIndex] = useState(initialIndex)
@@ -319,7 +322,8 @@ function RiyilsViewerInner({
     getVideoEl,
     getActiveId,
     currentIndex,
-    enableAutoAdvance
+    enableAutoAdvance,
+    observer
   )
 
   useIosSafariGuard({
@@ -354,7 +358,9 @@ function RiyilsViewerInner({
   const handleGestureIntent = useCallback(
     (intent: GestureIntent) => {
       if (intent.type === 'seek') {
-        handleSeek(intent.delta)
+        playbackHandlers.seek(intent.delta, 'gesture')
+        setSeekFeedback(intent.delta > 0 ? 'forward' : 'rewind')
+        globalThis.window.setTimeout(() => setSeekFeedback(null), FEEDBACK_ANIMATION_MS)
         return
       }
       if (intent.type === 'toggle-play') {
@@ -369,7 +375,7 @@ function RiyilsViewerInner({
         playbackHandlers.setSpeedUp(false)
       }
     },
-    [handleSeek, playbackHandlers, playbackState.hasError, togglePlay]
+    [playbackHandlers, playbackState.hasError, togglePlay]
   )
 
   const { onZoneClick, onStartSpeed, onStopSpeed } = useRiyilsGestures(
@@ -377,7 +383,11 @@ function RiyilsViewerInner({
     playbackState.hasError
   )
 
-  useRiyilsKeyboard(onClose, togglePlay, playbackHandlers.toggleMute)
+  useRiyilsKeyboard(
+    onClose,
+    togglePlay,
+    playbackHandlers.toggleMute
+  )
 
   useEffect(() => {
     const container = containerRef.current

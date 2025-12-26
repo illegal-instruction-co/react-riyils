@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePlaybackController } from '../playback/PlaybackControllerContext'
 import { resetVideoSource } from '../use-video-source'
+import { useRiyilsObserver } from '../observe/useRiyilsObserver'
 
 const PLAY_VERIFY_MS = 260
 const READY_TIMEOUT_MS = 1200
@@ -35,11 +36,14 @@ function waitForReady(video: HTMLVideoElement): Promise<boolean> {
     })
 }
 
+type Observer = ReturnType<typeof useRiyilsObserver>
+
 export function useRiyilsPlayback(
     getVideoEl: (index: number) => HTMLVideoElement | null,
     getActiveId: () => string | undefined,
     currentIndex: number,
-    enableAutoAdvance: boolean
+    enableAutoAdvance: boolean,
+    observer: Observer
 ) {
     const playbackController = usePlaybackController()
 
@@ -61,6 +65,7 @@ export function useRiyilsPlayback(
         if (!isPlaying) {
             playbackController.reset('viewer', id)
             video.pause()
+            observer.pause(id, 'user')
             return
         }
 
@@ -82,13 +87,17 @@ export function useRiyilsPlayback(
         if (playTokenRef.current !== token) return
 
         if (result === 'playing') {
-            if (video.muted !== isMuted) setIsMuted(video.muted)
-            if (!isPlaying) setIsPlaying(true)
+            observer.play(id, 'auto')
+            if (video.muted !== isMuted) {
+                setIsMuted(video.muted)
+                observer.mute(id, video.muted, 'autoplay')
+            }
             return
         }
 
         if (result === 'blocked') {
             setIsMuted(true)
+            observer.mute(id, true, 'autoplay')
         }
 
         setIsPlaying(false)
@@ -101,6 +110,7 @@ export function useRiyilsPlayback(
         isPlaying,
         isSpeedUp,
         playbackController,
+        observer,
     ])
 
     useEffect(() => {
@@ -109,46 +119,62 @@ export function useRiyilsPlayback(
 
     const togglePlay = useCallback(() => {
         if (hasError) return
-        setIsPlaying((p) => !p)
-    }, [hasError])
+        const id = getActiveId()
+        setIsPlaying((p) => {
+            if (id) observer[p ? 'pause' : 'play'](id, 'user')
+            return !p
+        })
+    }, [getActiveId, hasError, observer])
 
     const toggleMute = useCallback(() => {
-        setIsMuted((m) => !m)
-    }, [])
+        const id = getActiveId()
+        setIsMuted((m) => {
+            if (id) observer.mute(id, !m, 'user')
+            return !m
+        })
+    }, [getActiveId, observer])
 
     const seek = useCallback(
-        (deltaSeconds: number) => {
+        (deltaSeconds: number, method: 'gesture' | 'keyboard') => {
             const v = getVideoEl(currentIndex)
-            if (!v || hasError) return
+            const id = getActiveId()
+            if (!v || hasError || !id) return
             const next = Math.min(
                 Math.max(v.currentTime + deltaSeconds, 0),
                 v.duration || Number.MAX_SAFE_INTEGER
             )
             v.currentTime = next
+            observer.seek(id, deltaSeconds, method)
         },
-        [currentIndex, getVideoEl, hasError]
+        [currentIndex, getActiveId, getVideoEl, hasError, observer]
     )
 
     const onEnded = useCallback(() => {
+        const id = getActiveId()
+        if (id) observer.ended(id, enableAutoAdvance)
         if (!enableAutoAdvance) return
         const v = getVideoEl(currentIndex)
         if (!v) return
         v.currentTime = 0
         void applyPlayback()
-    }, [applyPlayback, currentIndex, enableAutoAdvance, getVideoEl])
+    }, [applyPlayback, currentIndex, enableAutoAdvance, getActiveId, getVideoEl, observer])
 
     const onError = useCallback(() => {
+        const id = getActiveId()
         setHasError(true)
         setIsPlaying(false)
-        const id = getActiveId()
-        if (id) playbackController.reset('viewer', id)
-    }, [getActiveId, playbackController])
+        if (id) {
+            observer.error(id, 'decode')
+            playbackController.reset('viewer', id)
+        }
+    }, [getActiveId, observer, playbackController])
 
     const onRetry = useCallback(() => {
         const id = getActiveId()
         if (!id) return
         setHasError(false)
         setIsPlaying(true)
+        observer.retry(id)
         playbackController.reset('viewer', id)
         resetVideoSource('viewer', id)
         const v = getVideoEl(currentIndex)
@@ -156,7 +182,7 @@ export function useRiyilsPlayback(
             v.load()
             void applyPlayback()
         }
-    }, [applyPlayback, currentIndex, getActiveId, getVideoEl, playbackController])
+    }, [applyPlayback, currentIndex, getActiveId, getVideoEl, observer, playbackController])
 
     const playbackState = useMemo(
         () => ({

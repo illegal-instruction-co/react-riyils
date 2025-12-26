@@ -1,6 +1,9 @@
 import React from 'react'
 import { Play, AlertCircle, RotateCcw } from 'lucide-react'
 import type { ReactRiyilsTranslations } from '../index'
+import { useRiyilsObserver } from '../observe/useRiyilsObserver'
+
+type Observer = ReturnType<typeof useRiyilsObserver>
 
 interface CarouselSlideProps {
     registerRef: (el: HTMLVideoElement | null) => void
@@ -11,6 +14,8 @@ interface CarouselSlideProps {
     onClick: () => void
     onRetry: () => void
     onError: () => void
+    observer: Observer
+    videoId: string
 }
 
 export function CarouselSlide({
@@ -22,6 +27,8 @@ export function CarouselSlide({
     onClick,
     onRetry,
     onError,
+    observer,
+    videoId,
 }: Readonly<CarouselSlideProps>) {
     const disabled = active && hasError
 
@@ -29,7 +36,10 @@ export function CarouselSlide({
         <button
             type="button"
             className="react-riyils__slide-button"
-            onClick={onClick}
+            onClick={() => {
+                observer.play(videoId, 'user')
+                onClick()
+            }}
             disabled={disabled}
             aria-label={active ? t.slideActiveAriaLabel : t.slideInactiveAriaLabel}
         >
@@ -42,6 +52,7 @@ export function CarouselSlide({
                             className="react-riyils__retry-button"
                             onClick={(e) => {
                                 e.stopPropagation()
+                                observer.retry(videoId)
                                 onRetry()
                             }}
                         >
@@ -55,7 +66,10 @@ export function CarouselSlide({
                         playsInline
                         preload={shouldLoad ? 'auto' : 'metadata'}
                         className="react-riyils__video"
-                        onError={onError}
+                        onError={() => {
+                            observer.error(videoId, 'decode')
+                            onError()
+                        }}
                     />
                 )}
 

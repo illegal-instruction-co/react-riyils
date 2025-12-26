@@ -11,6 +11,7 @@ import { useCarouselPlayback } from './carousel/useCarouselPlayback'
 import { useCarouselPreload } from './carousel/useCarouselPreload'
 import { useCarouselRegistry } from './carousel/useCarouselRegistry'
 import { PlaybackControllerProvider } from './playback/PlaybackControllerContext'
+import { useRiyilsObserver } from './observe/useRiyilsObserver'
 
 import './video-swiper.css'
 import 'swiper/css'
@@ -52,6 +53,7 @@ function CarouselSlideContainer({
   activeIndex,
   t,
   registry,
+  observer,
   onSlideClick,
 }: Readonly<{
   video: Video
@@ -59,6 +61,7 @@ function CarouselSlideContainer({
   activeIndex: number
   t: ReactRiyilsTranslations
   registry: ReturnType<typeof useCarouselRegistry>
+  observer: ReturnType<typeof useRiyilsObserver>
   onSlideClick: (index: number, isActive: boolean) => void
 }>) {
   const isActive = index === activeIndex
@@ -68,28 +71,39 @@ function CarouselSlideContainer({
 
   const videoRef = useRef<HTMLVideoElement | null>(null)
 
-  const register = useMemo(() => registry.register(video.id), [registry, video.id])
+  const registerRef = useMemo(() => registry.register(video.id), [registry, video.id])
 
-  const registerRef = useCallback(
+  const setVideoRef = useCallback(
     (el: HTMLVideoElement | null) => {
-      register(el)
+      registerRef(el)
       videoRef.current = el
     },
-    [register]
+    [registerRef]
   )
 
   useVideoSource(videoRef, 'carousel', video.id, video.videoUrl, shouldLoad)
 
-  const playback = useCarouselPlayback(videoRef, isActive, isPreview, shouldLoad)
+  const playback = useCarouselPlayback(
+    videoRef,
+    video.id,
+    isActive,
+    isPreview,
+    shouldLoad,
+    observer
+  )
+
+  const handleClick = useCallback(() => onSlideClick(index, isActive), [index, isActive, onSlideClick])
 
   return (
     <CarouselSlide
-      registerRef={registerRef}
+      registerRef={setVideoRef}
       active={isActive}
       shouldLoad={shouldLoad}
       hasError={playback.hasError}
       t={t}
-      onClick={() => onSlideClick(index, isActive)}
+      videoId={video.id}
+      observer={observer}
+      onClick={handleClick}
       onRetry={playback.retry}
       onError={playback.onError}
     />
@@ -106,6 +120,9 @@ function ReactRiyilsInner({
   containerHeightDesktop,
   enableAutoAdvance = true,
 }: Readonly<ReactRiyilsProps>) {
+
+  const observer = useRiyilsObserver('carousel')
+
   const swiperRef = useRef<SwiperType | null>(null)
   const [activeIndex, setActiveIndex] = useState(currentIndex)
 
@@ -116,10 +133,12 @@ function ReactRiyilsInner({
 
   const containerStyle = useMemo(
     () =>
-      ({
+    ((
+      {
         '--container-height-mobile': containerHeightMobile ? `${containerHeightMobile}px` : undefined,
         '--container-height-desktop': containerHeightDesktop ? `${containerHeightDesktop}px` : undefined,
-      }) as React.CSSProperties,
+      } as unknown
+    ) as React.CSSProperties),
     [containerHeightMobile, containerHeightDesktop]
   )
 
@@ -200,6 +219,7 @@ function ReactRiyilsInner({
               activeIndex={activeIndex}
               t={t}
               registry={registry}
+              observer={observer}
               onSlideClick={handleSlideClick}
             />
           </SwiperSlide>
@@ -247,10 +267,7 @@ function ActiveAutoAdvanceBridge({
 
     const handler = () => onAdvance()
     el.addEventListener('ended', handler)
-
-    return () => {
-      el.removeEventListener('ended', handler)
-    }
+    return () => el.removeEventListener('ended', handler)
   }, [enabled, registry, videos, activeIndex, onAdvance])
 
   return null

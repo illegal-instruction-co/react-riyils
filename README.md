@@ -79,6 +79,40 @@ It provides:
 
 ---
 
+### Observing (Optional)
+
+React Riyils provides a passive event stream that allows playback behavior
+to be observed without affecting it.
+
+Events may include:
+- play / pause
+- mute / unmute
+- seek (gesture or keyboard)
+- errors and retries
+- video completion
+
+Observing is optional and has no impact on playback if unused.
+
+#### Usage
+
+```ts
+import { useRiyilsObserver } from 'react-riyils'
+
+// This hook is typically called inside the viewer or carousel surface.
+useRiyilsObserver('viewer', (event) => {
+  console.log(event)
+})
+```
+
+Each event includes a type, scope (carousel or viewer), and videoId,
+with additional context depending on the action.
+
+Notes
+
+The observing system is read-only by design.
+It is intended for analytics, logging, and debugging,
+not for controlling playback behavior.
+
 ## Installation
 
 ```bash
