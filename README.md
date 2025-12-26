@@ -93,6 +93,12 @@ Events may include:
 
 Observing is optional and has no impact on playback if unused.
 
+```
+useRiyilsObserver('viewer', (e) => setState(e))
+```
+
+!!! Do not bind observer events directly to React state updates:
+
 #### Usage
 
 ```ts

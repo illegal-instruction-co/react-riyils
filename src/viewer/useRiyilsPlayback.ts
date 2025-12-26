@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePlaybackController } from '../playback/PlaybackControllerContext'
-import { resetVideoSource } from '../use-video-source'
 import { useRiyilsObserver } from '../observe/useRiyilsObserver'
 
 const PLAY_VERIFY_MS = 260
@@ -67,9 +66,8 @@ export function useRiyilsPlayback(
 
         if (id !== activeIdRef.current) return
 
-        if (!video.src && video.readyState === 0) return
-
         if (video.readyState === 0) {
+            setHasStarted(false)
             video.load()
             return
         }
@@ -127,6 +125,10 @@ export function useRiyilsPlayback(
         playbackController,
         observer,
     ])
+
+    useEffect(() => {
+        playTokenRef.current++
+    }, [currentIndex])
 
     useEffect(() => {
         void applyPlayback()
@@ -218,12 +220,16 @@ export function useRiyilsPlayback(
 
     const onError = useCallback(() => {
         const id = getActiveId()
+        if (!id) return
+
         setHasError(true)
         setIsPlaying(false)
-        if (id) {
-            observer.error(id, 'decode')
+
+        observer.error(id, 'decode')
+
+        requestAnimationFrame(() => {
             playbackController.reset('viewer', id)
-        }
+        })
     }, [getActiveId, observer, playbackController])
 
     const onRetry = useCallback(() => {
@@ -241,11 +247,18 @@ export function useRiyilsPlayback(
 
         observer.retry(id)
         playbackController.reset('viewer', id)
-        resetVideoSource('viewer', id)
 
         requestAnimationFrame(() => {
             const v = getVideoEl(currentIndex)
-            if (v) v.load()
+            if (!v) {
+                retryingRef.current = false
+                return
+            }
+
+            v.pause()
+            v.currentTime = 0
+            v.load()
+
             retryingRef.current = false
             void applyPlayback()
         })

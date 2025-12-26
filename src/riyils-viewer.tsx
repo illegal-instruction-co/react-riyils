@@ -17,7 +17,7 @@ import {
   X,
   Zap,
 } from 'lucide-react'
-import { resetVideoSource, useVideoSource, type VideoQualityVariants } from './use-video-source'
+import { useVideoSource, type VideoQualityVariants } from './use-video-source'
 import { ProgressBar, type ProgressBarRef } from './progress-bar'
 import { useVideoRegistry } from './viewer/useVideoRegistry'
 import { useRiyilsGestures, type GestureIntent, type GestureZone } from './viewer/useRiyilsGestures'
@@ -466,7 +466,6 @@ function RiyilsViewerInner({
       if (nextVideo) {
         nextVideo.pause()
         nextVideo.currentTime = 0
-        nextVideo.load()
       }
     },
     [getVideoEl, onVideoChange, preloadAround, registry]
@@ -483,8 +482,6 @@ function RiyilsViewerInner({
       onError: playbackHandlers.onError,
       onRetry: (e) => {
         e.stopPropagation()
-        const id = getActiveId()
-        if (id) resetVideoSource('viewer', id)
         playbackHandlers.onRetry()
       },
       onContextMenu: (e) => {

@@ -270,7 +270,7 @@ export function useVideoSource(
         if (!video) return
 
         if (!shouldLoad || !src) {
-            if (!isIosSafari()) {
+            if (scope !== 'viewer' && !isIosSafari()) {
                 videoSourceManager.detach(key, video)
             }
             return
@@ -279,11 +279,11 @@ export function useVideoSource(
         videoSourceManager.attach(video, key, src)
 
         return () => {
-            if (!isIosSafari()) {
+            if (scope !== 'viewer' && !isIosSafari()) {
                 videoSourceManager.detach(key, video)
             }
         }
-    }, [key, shouldLoad, src, videoRef])
+    }, [key, scope, shouldLoad, src, videoRef])
 
     return finalUrl;
 }
