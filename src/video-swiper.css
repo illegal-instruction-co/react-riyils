@@ -334,32 +334,31 @@
   height: 48px;
 }
 
-.react-riyils-viewer__gesture-grid {
-  position: absolute;
+.react-riyils-viewer__gesture-overlay {
+  position: fixed;
   inset: 0;
   z-index: 30;
   display: grid;
-  grid-template-columns: 25% 50% 25%;
+  grid-template-columns: 40% 20% 40%;
+  pointer-events: auto;
   border: 0;
   margin: 0;
   padding: 0;
 }
 
 .react-riyils-viewer__gesture-zone {
-  height: 100%;
   width: 100%;
+  height: 100%;
   background: transparent;
   border: none;
-  outline: none;
   padding: 0;
   margin: 0;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  appearance: none;
 }
 
 .react-riyils-viewer__gesture-zone:active {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 @keyframes rr-fade-zoom-in {

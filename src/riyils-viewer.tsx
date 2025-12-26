@@ -167,40 +167,6 @@ const RiyilsSlide = React.memo(function RiyilsSlide({
         </div>
       )}
 
-      {active && (
-        <fieldset
-          className="react-riyils-viewer__gesture-grid"
-          onContextMenu={handlers.onContextMenu}
-          tabIndex={-1}
-        >
-          <button
-            type="button"
-            className="react-riyils-viewer__gesture-zone"
-            onClick={(e) => handlers.onZoneClick('left', e)}
-            aria-label={t.rewind}
-            disabled={playback.hasError}
-          />
-          <button
-            type="button"
-            className="react-riyils-viewer__gesture-zone"
-            onClick={(e) => handlers.onZoneClick('center', e)}
-            aria-label={playback.isPlaying ? t.pause : t.play}
-            disabled={playback.hasError}
-          />
-          <button
-            type="button"
-            className="react-riyils-viewer__gesture-zone"
-            onClick={(e) => handlers.onZoneClick('right', e)}
-            onTouchStart={handlers.onStartSpeed}
-            onTouchEnd={handlers.onStopSpeed}
-            onMouseDown={handlers.onStartSpeed}
-            onMouseUp={handlers.onStopSpeed}
-            aria-label={t.forward}
-            disabled={playback.hasError}
-          />
-        </fieldset>
-      )}
-
       {active && !playback.hasError && (
         <>
           <div className={`react-riyils-viewer__feedback-speed ${playback.isSpeedUp ? 'visible' : ''}`}>
@@ -538,6 +504,38 @@ function RiyilsViewerInner({
           <X size={24} strokeWidth={2.5} />
         </button>
       </div>
+
+      <fieldset
+        className="react-riyils-viewer__gesture-overlay"
+        onContextMenu={handlers.onContextMenu}
+        tabIndex={-1}
+      >
+        <button
+          type="button"
+          className="react-riyils-viewer__gesture-zone left"
+          onClick={(e) => handlers.onZoneClick('left', e)}
+          aria-label={t.rewind}
+          disabled={playback.hasError}
+        />
+        <button
+          type="button"
+          className="react-riyils-viewer__gesture-zone center"
+          onClick={(e) => handlers.onZoneClick('center', e)}
+          aria-label={playback.isPlaying ? t.pause : t.play}
+          disabled={playback.hasError}
+        />
+        <button
+          type="button"
+          className="react-riyils-viewer__gesture-zone right"
+          onClick={(e) => handlers.onZoneClick('right', e)}
+          onTouchStart={handlers.onStartSpeed}
+          onTouchEnd={handlers.onStopSpeed}
+          onMouseDown={handlers.onStartSpeed}
+          onMouseUp={handlers.onStopSpeed}
+          aria-label={t.forward}
+          disabled={playback.hasError}
+        />
+      </fieldset>
 
       <Swiper
         modules={[Keyboard, Mousewheel, Virtual]}
