@@ -4,7 +4,7 @@ import { Keyboard, Mousewheel, EffectCoverflow, Virtual } from 'swiper/modules';
 import type { Swiper as SwiperType } from 'swiper';
 import { Play, AlertCircle, RotateCcw } from 'lucide-react';
 import { useVideoSource } from './use-video-source';
-
+import { playbackController } from './playback-controller';
 import { type Video } from './riyils-viewer';
 
 import './video-swiper.css';
@@ -47,53 +47,62 @@ type SlideItemProps = {
   onEnded?: () => void;
 };
 
+const PREVIEW_VERIFY_MS = 220;
+
 const SlideItem = React.memo(
   ({ video, isVisualActive, index, onVideoClick, t, shouldLoad, onEnded }: SlideItemProps) => {
-    const videoRef = useRef<HTMLVideoElement>(null);
+    const videoRef = useRef<HTMLVideoElement | null>(null);
     const [hasError, setHasError] = useState(false);
 
-    useVideoSource(videoRef, video.videoUrl, shouldLoad);
+    useVideoSource(videoRef, 'carousel', video.id, video.videoUrl, shouldLoad);
+
+    useEffect(() => {
+      setHasError(false);
+    }, [video.id]);
+
+    useEffect(() => {
+      if (!isVisualActive) {
+        setHasError(false);
+      }
+    }, [isVisualActive]);
 
     useEffect(() => {
       const el = videoRef.current;
-      if (!el || hasError) return;
+      if (!el || hasError || !shouldLoad || !isVisualActive) return;
 
-      const tryPlay = (video: HTMLVideoElement, onFail?: () => void): void => {
-        video.play().catch(() => {
-          if (onFail) {
-            onFail();
-          }
+      let cancelled = false;
+
+      const run = async () => {
+        el.muted = true;
+        el.playbackRate = 1;
+        el.currentTime = 0;
+
+        const result = await playbackController.play({
+          scope: 'carousel',
+          id: video.id,
+          video: el,
+          options: {
+            muted: true,
+            playbackRate: 1,
+            allowAutoMute: true,
+            verifyMs: PREVIEW_VERIFY_MS,
+          },
         });
-      };
 
-      const safePlay = (): void => {
-        tryPlay(el, () => {
-          el.muted = true;
-          tryPlay(el);
-        });
-      };
+        if (cancelled) return;
 
-      const handleTimeUpdate = () => {
-        if (!isVisualActive && el.currentTime >= 2) {
-          el.currentTime = 0;
-          safePlay();
+        if (result !== 'playing') {
+          el.pause();
         }
       };
 
-      el.addEventListener('timeupdate', handleTimeUpdate);
-
-      if (isVisualActive) {
-        el.currentTime = 0;
-        safePlay();
-      } else if (shouldLoad) {
-        el.muted = true;
-        el.currentTime = 0;
-      }
+      void run();
 
       return () => {
-        el.removeEventListener('timeupdate', handleTimeUpdate);
+        cancelled = true;
+        playbackController.reset('carousel', video.id);
       };
-    }, [isVisualActive, shouldLoad, hasError]);
+    }, [hasError, isVisualActive, shouldLoad, video.id]);
 
     const handleError = useCallback(() => {
       setHasError(true);
@@ -105,24 +114,21 @@ const SlideItem = React.memo(
       videoRef.current?.load();
     }, []);
 
+    const disabled = isVisualActive && hasError;
+
     return (
       <button
         type="button"
         className="react-riyils__slide-button"
-        onClick={() => !hasError && onVideoClick(index)}
+        onClick={() => !disabled && onVideoClick(index)}
         aria-label={isVisualActive ? t.slideActiveAriaLabel : t.slideInactiveAriaLabel}
-        disabled={hasError}
+        disabled={disabled}
       >
         <div className={`react-riyils__card ${isVisualActive ? 'active' : ''}`}>
-          {hasError ? (
+          {isVisualActive && hasError ? (
             <div className="react-riyils__error-container">
               <AlertCircle size={32} className="react-riyils__error-icon" />
-              <button
-                type="button"
-                className="react-riyils__retry-button"
-                onClick={handleRetry}
-                aria-label="Retry video"
-              >
+              <button type="button" className="react-riyils__retry-button" onClick={handleRetry} aria-label="Retry video">
                 <RotateCcw size={20} />
               </button>
             </div>
@@ -172,61 +178,31 @@ export function ReactRiyils({
   const swiperRef = useRef<SwiperType | null>(null);
   const [activeIndex, setActiveIndex] = useState(currentIndex);
 
-  const t = useMemo(
-    () => ({ ...defaultReactRiyilsTranslations, ...translations }),
-    [translations]
-  );
+  const t = useMemo(() => ({ ...defaultReactRiyilsTranslations, ...translations }), [translations]);
 
   const containerStyle = useMemo(
     () =>
       ({
-        '--container-height-mobile': containerHeightMobile
-          ? `${containerHeightMobile}px`
-          : undefined,
-        '--container-height-desktop': containerHeightDesktop
-          ? `${containerHeightDesktop}px`
-          : undefined,
+        '--container-height-mobile': containerHeightMobile ? `${containerHeightMobile}px` : undefined,
+        '--container-height-desktop': containerHeightDesktop ? `${containerHeightDesktop}px` : undefined,
       }) as React.CSSProperties,
     [containerHeightMobile, containerHeightDesktop]
   );
 
   useEffect(() => {
-    const swiper = swiperRef.current;
-    if (!swiper || swiper.destroyed) return;
-
-    if (swiper.activeIndex !== currentIndex) {
-      swiper.slideTo(currentIndex, 0);
-    }
-
-    swiper.update();
-
-    const timer = setTimeout(() => {
-      if (!swiper.destroyed) {
-        swiper.updateSize();
-        swiper.updateSlides();
-        swiper.updateProgress();
-        swiper.virtual?.update(true);
-      }
-    }, 100);
-
-    return () => clearTimeout(timer);
+    setActiveIndex(currentIndex);
+    swiperRef.current?.slideTo(currentIndex, 0);
   }, [currentIndex]);
-
-  useEffect(() => {
-    swiperRef.current?.virtual?.update(true);
-    swiperRef.current?.update();
-  }, [videos.length]);
 
   const handleSlideChange = useCallback(
     (swiper: SwiperType) => {
-      requestAnimationFrame(() => {
-        if (swiper.activeIndex !== currentIndex) {
-          setActiveIndex(swiper.activeIndex);
-          onVideoChange(swiper.activeIndex);
-        }
-      });
+      const next = swiper.activeIndex;
+      if (next !== activeIndex) {
+        setActiveIndex(next);
+        onVideoChange(next);
+      }
     },
-    [onVideoChange, currentIndex]
+    [activeIndex, onVideoChange]
   );
 
   const handleVideoEnded = useCallback(() => {
@@ -241,20 +217,13 @@ export function ReactRiyils({
         onVideoClick(index);
         return;
       }
-
-      if (swiperRef.current && !swiperRef.current.destroyed) {
-        swiperRef.current.slideTo(index);
-      }
+      swiperRef.current?.slideTo(index);
     },
     [onVideoClick]
   );
 
   return (
-    <section
-      className="react-riyils__container"
-      style={containerStyle}
-      aria-label={t.carouselAriaLabel}
-    >
+    <section className="react-riyils__container" style={containerStyle} aria-label={t.carouselAriaLabel}>
       <Swiper
         modules={[Keyboard, Mousewheel, EffectCoverflow, Virtual]}
         observer
