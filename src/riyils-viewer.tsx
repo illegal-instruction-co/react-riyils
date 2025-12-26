@@ -7,6 +7,8 @@ import {
   ChevronsLeft,
   ChevronsRight,
   ChevronsUp,
+  ChevronUp,
+  ChevronDown,
   Pause,
   Play,
   RotateCcw,
@@ -167,6 +169,38 @@ const RiyilsSlide = React.memo(function RiyilsSlide({
         </div>
       )}
 
+      <fieldset
+        className="react-riyils-viewer__gesture-overlay"
+        onContextMenu={handlers.onContextMenu}
+        tabIndex={-1}
+      >
+        <button
+          type="button"
+          className="react-riyils-viewer__gesture-zone left"
+          onClick={(e) => handlers.onZoneClick('left', e)}
+          aria-label={t.rewind}
+          disabled={playback.hasError}
+        />
+        <button
+          type="button"
+          className="react-riyils-viewer__gesture-zone center"
+          onClick={(e) => handlers.onZoneClick('center', e)}
+          aria-label={playback.isPlaying ? t.pause : t.play}
+          disabled={playback.hasError}
+        />
+        <button
+          type="button"
+          className="react-riyils-viewer__gesture-zone right"
+          onClick={(e) => handlers.onZoneClick('right', e)}
+          onTouchStart={handlers.onStartSpeed}
+          onTouchEnd={handlers.onStopSpeed}
+          onMouseDown={handlers.onStartSpeed}
+          onMouseUp={handlers.onStopSpeed}
+          aria-label={t.forward}
+          disabled={playback.hasError}
+        />
+      </fieldset>
+
       {active && !playback.hasError && (
         <>
           <div className={`react-riyils-viewer__feedback-speed ${playback.isSpeedUp ? 'visible' : ''}`}>
@@ -294,10 +328,18 @@ function RiyilsViewerInner({
   const [seekFeedback, setSeekFeedback] = useState<SeekFeedback>(null)
   const [showPlayPauseIcon, setShowPlayPauseIcon] = useState(false)
   const [showScrollHint, setShowScrollHint] = useState(false)
+  const [isDesktop, setIsDesktop] = useState(false)
 
   const swiperRef = useRef<SwiperType | null>(null)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const progressBarRef = useRef<ProgressBarRef>(null)
+
+  useEffect(() => {
+    const checkDesktop = () => setIsDesktop(globalThis.window !== undefined && globalThis.window.innerWidth >= 768)
+    checkDesktop()
+    globalThis.window.addEventListener('resize', checkDesktop)
+    return () => globalThis.window.removeEventListener('resize', checkDesktop)
+  }, [])
 
   useIosAutoplayUnlock(containerRef)
 
@@ -324,7 +366,7 @@ function RiyilsViewerInner({
 
   const showPlayPauseOnce = useCallback(() => {
     setShowPlayPauseIcon(true)
-    globalThis.window.setTimeout(() => setShowPlayPauseIcon(false), FEEDBACK_ANIMATION_MS)
+    globalThis.globalThis.window.setTimeout(() => setShowPlayPauseIcon(false), FEEDBACK_ANIMATION_MS)
   }, [])
 
   const togglePlay = useCallback(() => {
@@ -338,7 +380,7 @@ function RiyilsViewerInner({
       if (intent.type === 'seek') {
         playbackHandlers.seek(intent.delta, 'gesture')
         setSeekFeedback(intent.delta > 0 ? 'forward' : 'rewind')
-        globalThis.window.setTimeout(() => setSeekFeedback(null), FEEDBACK_ANIMATION_MS)
+        globalThis.globalThis.window.setTimeout(() => setSeekFeedback(null), FEEDBACK_ANIMATION_MS)
         return
       }
       if (intent.type === 'toggle-play') {
@@ -380,8 +422,8 @@ function RiyilsViewerInner({
 
   useEffect(() => {
     setShowScrollHint(true)
-    const tmr = globalThis.window.setTimeout(() => setShowScrollHint(false), SCROLL_HINT_MS)
-    return () => globalThis.window.clearTimeout(tmr)
+    const tmr = globalThis.globalThis.window.setTimeout(() => setShowScrollHint(false), SCROLL_HINT_MS)
+    return () => globalThis.globalThis.window.clearTimeout(tmr)
   }, [currentIndex])
 
   const handleTimeUpdate = useCallback((e: React.SyntheticEvent<HTMLVideoElement>) => {
@@ -505,38 +547,6 @@ function RiyilsViewerInner({
         </button>
       </div>
 
-      <fieldset
-        className="react-riyils-viewer__gesture-overlay"
-        onContextMenu={handlers.onContextMenu}
-        tabIndex={-1}
-      >
-        <button
-          type="button"
-          className="react-riyils-viewer__gesture-zone left"
-          onClick={(e) => handlers.onZoneClick('left', e)}
-          aria-label={t.rewind}
-          disabled={playback.hasError}
-        />
-        <button
-          type="button"
-          className="react-riyils-viewer__gesture-zone center"
-          onClick={(e) => handlers.onZoneClick('center', e)}
-          aria-label={playback.isPlaying ? t.pause : t.play}
-          disabled={playback.hasError}
-        />
-        <button
-          type="button"
-          className="react-riyils-viewer__gesture-zone right"
-          onClick={(e) => handlers.onZoneClick('right', e)}
-          onTouchStart={handlers.onStartSpeed}
-          onTouchEnd={handlers.onStopSpeed}
-          onMouseDown={handlers.onStartSpeed}
-          onMouseUp={handlers.onStopSpeed}
-          aria-label={t.forward}
-          disabled={playback.hasError}
-        />
-      </fieldset>
-
       <Swiper
         modules={[Keyboard, Mousewheel, Virtual]}
         direction="vertical"
@@ -576,6 +586,33 @@ function RiyilsViewerInner({
       >
         <ChevronsUp size={32} color="rgba(255, 255, 255, 0.7)" />
       </div>
+
+      {isDesktop && (
+        <div className="react-riyils-viewer__nav-container">
+          <button
+            type="button"
+            className="react-riyils-viewer__btn react-riyils-viewer__btn-nav"
+            onClick={(e) => {
+              e.stopPropagation()
+              swiperRef.current?.slidePrev()
+            }}
+            aria-label="Previous video"
+          >
+            <ChevronUp size={24} />
+          </button>
+          <button
+            type="button"
+            className="react-riyils-viewer__btn react-riyils-viewer__btn-nav"
+            onClick={(e) => {
+              e.stopPropagation()
+              swiperRef.current?.slideNext()
+            }}
+            aria-label="Next video"
+          >
+            <ChevronDown size={24} />
+          </button>
+        </div>
+      )}
 
       <div className="react-riyils-viewer__gradient-bottom">
         <div className="react-riyils-viewer__controls-row">

@@ -2,282 +2,798 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>React Riyils - Predictable Videos For The Web</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>React Riyils — Predictable Videos For The Web</title>
 
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 
-  <link rel="stylesheet" href="dist/index.css">
+  <link rel="stylesheet" href="dist/index.css" />
   <script src="dist/index.umd.js"></script>
 
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
 
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
-    rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
-          },
-          colors: {
-            brand: {
-              500: '#0ea5e9',
-              600: '#0284c7',
-            }
-          },
-          animation: {
-            'float': 'float 6s ease-in-out infinite',
-          },
-          keyframes: {
-            float: {
-              '0%, 100%': { transform: 'translateY(0)' },
-              '50%': { transform: 'translateY(-20px)' },
-            }
-          }
-        }
-      }
-    }
-  </script>
+    rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 
   <style>
+    :root {
+      color-scheme: light;
+      --bg: #ffffff;
+      --text: #0b1220;
+      --muted: rgba(11, 18, 32, 0.62);
+      --muted-2: rgba(11, 18, 32, 0.46);
+      --border: rgba(15, 23, 42, 0.10);
+      --border-2: rgba(15, 23, 42, 0.14);
+      --card: rgba(255, 255, 255, 0.72);
+      --card-2: rgba(255, 255, 255, 0.86);
+      --shadow: 0 30px 80px rgba(2, 6, 23, 0.10);
+      --shadow-soft: 0 18px 45px rgba(2, 6, 23, 0.10);
+      --ring: 0 0 0 4px rgba(14, 165, 233, 0.16);
+
+      --brand-a: #0284c7;
+      --brand-b: #6366f1;
+      --brand-c: #22c55e;
+
+      --radius-xl: 22px;
+      --radius-lg: 16px;
+      --radius-md: 12px;
+
+      --container: min(1200px, calc(100vw - 48px));
+      --nav-h: 76px;
+      --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
     body {
-      background-color: #ffffff;
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Plus Jakarta Sans", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji",
+        "Segoe UI Emoji";
+      color: var(--text);
+      background: var(--bg);
       overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
-    ::-webkit-scrollbar {
-      width: 0px;
+    ::selection {
+      background: rgba(2, 132, 199, 0.18);
     }
 
-    .gradient-text {
-      background: linear-gradient(135deg, #0284c7 0%, #6366f1 100%);
+    :focus-visible {
+      outline: none;
+      box-shadow: var(--ring);
+      border-radius: 10px;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .noise {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image: url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGZpbHRlciBpZD0ibiI+PGZlVHVyYnVsZW5jZSB0eXBlPSJmcmFjdGFsTm9pc2UiIGJhc2VGcmVxdWVuY3k9IjAuNyIgLz48L2ZpbHRlcj48cmVjdCB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIGZpbHRlcj0idXJsKCNuKSIgb3BhY2l0eT0iMC4xNSIgLz48L3N2Zz4=");
+      opacity: 0.03;
+      z-index: 0;
+    }
+
+    .bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .blob {
+      position: absolute;
+      filter: blur(120px);
+      opacity: 0.45;
+      transform: translateZ(0);
+    }
+
+    .blob.blobA {
+      width: min(56vw, 780px);
+      height: min(56vw, 780px);
+      left: -18%;
+      top: -28%;
+      background: radial-gradient(circle at 35% 30%, rgba(2, 132, 199, 0.34), transparent 58%),
+        radial-gradient(circle at 65% 70%, rgba(99, 102, 241, 0.26), transparent 55%);
+    }
+
+    .blob.blobB {
+      width: min(52vw, 720px);
+      height: min(52vw, 720px);
+      right: -18%;
+      top: 4%;
+      background: radial-gradient(circle at 40% 40%, rgba(99, 102, 241, 0.30), transparent 58%),
+        radial-gradient(circle at 70% 60%, rgba(34, 197, 94, 0.18), transparent 60%);
+    }
+
+    .gridGlow {
+      position: absolute;
+      inset: -2px;
+      background-image: radial-gradient(circle at 1px 1px, rgba(15, 23, 42, 0.06) 1px, transparent 0);
+      background-size: 22px 22px;
+      mask-image: radial-gradient(circle at 50% 12%, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 58%);
+      opacity: 0.7;
+    }
+
+    .app {
+      min-height: 100svh;
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .container {
+      width: var(--container);
+      margin: 0 auto;
+    }
+
+    .nav {
+      height: var(--nav-h);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 0;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      user-select: none;
+    }
+
+    .brandMark {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.94), rgba(15, 23, 42, 0.86));
+      box-shadow: 0 14px 30px rgba(2, 6, 23, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+    }
+
+    .brandMark i {
+      color: rgba(255, 255, 255, 0.92);
+      font-size: 14px;
+    }
+
+    .brandName {
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      font-size: 15px;
+    }
+
+    .navRight {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .iconBtn {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.60);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      display: grid;
+      place-items: center;
+      box-shadow: 0 10px 24px rgba(2, 6, 23, 0.06);
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease);
+    }
+
+    .iconBtn:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 255, 255, 0.76);
+      border-color: var(--border-2);
+    }
+
+    .iconBtn:active {
+      transform: translateY(0px) scale(0.98);
+    }
+
+    .iconBtn i {
+      font-size: 18px;
+      color: rgba(11, 18, 32, 0.60);
+    }
+
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 18px 0 46px 0;
+    }
+
+    .hero {
+      padding: clamp(24px, 4vw, 52px) 0 18px 0;
+    }
+
+    .heroInner {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 28px;
+      align-items: start;
+    }
+
+    @media (max-width: 980px) {
+      .heroInner {
+        grid-template-columns: 1fr;
+        gap: 18px;
+      }
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: rgba(2, 132, 199, 0.06);
+      border: 1px solid rgba(2, 132, 199, 0.12);
+      box-shadow: 0 10px 20px rgba(2, 6, 23, 0.04);
+      width: fit-content;
+    }
+
+    .badgeDot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--brand-a), var(--brand-b));
+      box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.12);
+    }
+
+    .badgeText {
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(2, 132, 199, 0.92);
+    }
+
+    .h1 {
+      margin: 16px 0 0 0;
+      font-weight: 900;
+      letter-spacing: -0.045em;
+      line-height: 0.95;
+      font-size: clamp(44px, 5.2vw, 88px);
+    }
+
+    .gradientText {
+      background: linear-gradient(135deg, var(--brand-a) 0%, var(--brand-b) 100%);
       -webkit-background-clip: text;
       background-clip: text;
       -webkit-text-fill-color: transparent;
+      text-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
     }
 
-    .blob-bg {
+    .sub {
+      margin: 14px 0 0 0;
+      max-width: 52ch;
+      color: var(--muted);
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      font-size: 17px;
+      line-height: 1.45;
+    }
+
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12.5px;
+      color: var(--muted-2);
+      line-height: 1.65;
+    }
+
+    .monoBlock {
+      margin-top: 14px;
+      display: grid;
+      gap: 2px;
+    }
+
+    .heroSide {
+      position: relative;
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.58));
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: var(--shadow-soft);
+      padding: 16px;
+      overflow: hidden;
+    }
+
+    .heroSide::before {
+      content: "";
       position: absolute;
-      filter: blur(100px);
-      z-index: -1;
-      opacity: 0.4;
+      inset: 0;
+      background: radial-gradient(circle at 20% 10%, rgba(2, 132, 199, 0.10), transparent 40%),
+        radial-gradient(circle at 90% 30%, rgba(99, 102, 241, 0.08), transparent 42%),
+        radial-gradient(circle at 30% 110%, rgba(34, 197, 94, 0.06), transparent 42%);
+      pointer-events: none;
+    }
+
+    .panelRow {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 12px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      background: rgba(255, 255, 255, 0.60);
+    }
+
+    .panelRow+.panelRow {
+      margin-top: 10px;
+    }
+
+    .panelKey {
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      font-size: 13px;
+      color: rgba(11, 18, 32, 0.78);
+    }
+
+    .panelVal {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+      color: rgba(11, 18, 32, 0.55);
+    }
+
+    .stage {
+      position: relative;
+      margin-top: 22px;
+      padding: 22px 0 12px 0;
+    }
+
+    .stageGlow {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent 0%, rgba(2, 132, 199, 0.07) 45%, transparent 100%);
+      filter: blur(22px);
+      opacity: 0.9;
+      pointer-events: none;
+    }
+
+    .viewerWrap {
+      position: relative;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .frame {
+      position: relative;
+      border-radius: 28px;
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.56));
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      box-shadow: var(--shadow);
+      padding: 14px;
+      overflow: hidden;
+    }
+
+    .frame::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 18% 12%, rgba(2, 132, 199, 0.14), transparent 38%),
+        radial-gradient(circle at 78% 28%, rgba(99, 102, 241, 0.12), transparent 42%);
+      opacity: 0.8;
+      pointer-events: none;
+    }
+
+    .frameInner {
+      position: relative;
+      border-radius: 22px;
+      border: 1px solid rgba(15, 23, 42, 0.10);
+      background: rgba(255, 255, 255, 0.66);
+      overflow: hidden;
+    }
+
+    .hud {
+      position: absolute;
+      z-index: 3;
+      left: 14px;
+      top: 12px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(15, 23, 42, 0.10);
+      background: rgba(255, 255, 255, 0.62);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 14px 30px rgba(2, 6, 23, 0.08);
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .hudDot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--brand-c), var(--brand-a));
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.14);
+    }
+
+    .hudText {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+      color: rgba(11, 18, 32, 0.56);
+      white-space: nowrap;
+    }
+
+    .hudRight {
+      position: absolute;
+      z-index: 3;
+      right: 14px;
+      bottom: 12px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(15, 23, 42, 0.10);
+      background: rgba(255, 255, 255, 0.62);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 14px 30px rgba(2, 6, 23, 0.08);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+      color: rgba(11, 18, 32, 0.56);
+      white-space: nowrap;
+    }
+
+    .stats {
+      margin-top: 22px;
+      border-top: 1px solid rgba(15, 23, 42, 0.08);
+      padding-top: 18px;
+      display: flex;
+      gap: clamp(18px, 5vw, 54px);
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .stat {
+      min-width: 140px;
+      text-align: center;
+    }
+
+    .statV {
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+    }
+
+    .statL {
+      margin-top: 6px;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(11, 18, 32, 0.44);
+    }
+
+    .footer {
+      padding: 18px 0 34px 0;
+      text-align: center;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+      color: rgba(11, 18, 32, 0.46);
+    }
+
+    .fadeUp {
+      animation: fadeUp 0.9s var(--ease-out) both;
+    }
+
+    @keyframes fadeUp {
+      0% {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes hint {
+
+      0%,
+      100% {
+        opacity: 0.22;
+        transform: translateY(0);
+      }
+
+      50% {
+        opacity: 0.62;
+        transform: translateY(-2px);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+
+      .fadeUp,
+      .hintPill {
+        animation: none !important;
+      }
+
+      .iconBtn {
+        transition: none !important;
+      }
+    }
+
+    .viewerOverlay {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      border-top: 1px solid rgba(255, 255, 255, 0.70);
+    }
+
+    .viewerOverlay::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 15% 15%, rgba(2, 132, 199, 0.10), transparent 35%),
+        radial-gradient(circle at 80% 20%, rgba(99, 102, 241, 0.09), transparent 40%),
+        radial-gradient(circle at 35% 95%, rgba(34, 197, 94, 0.06), transparent 42%);
+      pointer-events: none;
+    }
+
+    @supports not ((backdrop-filter: blur(10px)) or (-webkit-backdrop-filter: blur(10px))) {
+
+      .iconBtn,
+      .hud,
+      .hudRight,
+      .hintPill,
+      .frame,
+      .heroSide,
+      .viewerOverlay {
+        background: rgba(255, 255, 255, 0.94);
+      }
     }
   </style>
 </head>
 
-<body class="text-slate-900 font-sans antialiased">
+<body>
+  <div class="noise"></div>
+  <div class="bg">
+    <div class="blob blobA"></div>
+    <div class="blob blobB"></div>
+    <div class="gridGlow"></div>
+  </div>
+
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect, useMemo, useRef } = React;
-    const { createRoot } = ReactDOM;
-    const { ReactRiyils, RiyilsViewer } = window.ReactRiyils || {};
+    const { useState, useEffect, useRef } = React
+    const { createRoot } = ReactDOM
+    const { ReactRiyils, RiyilsViewer } = window.ReactRiyils || {}
 
-    const TEXT_CONTENT = {
-      nav: {
-        brand: "React Riyils",
-        githubUrl: "https://github.com/illegal-instruction-co/react-riyils"
-      },
-      hero: {
-        badge: "Predictable Videos For The Web",
-        headlinePrefix: "Riyils for the",
-        headlineGradient: "Modern Web",
-        subheadline: "The most performant React component for Instagram-like riyils and vertical video feeds.",
-        ctaPrimary: "Get Started",
-        ctaSecondary: "Star on GitHub"
-      },
+    const TEXT = {
+      brand: 'React Riyils',
+      tagline: 'Predictable Videos For The Web',
+      heroTitleA: 'Riyils for the',
+      heroTitleB: 'Modern Web',
+      heroSubtitle: 'Deterministic playback for vertical video feeds. No autoplay hacks. No race conditions.',
+      github: 'https://github.com/illegal-instruction-co/react-riyils',
       stats: [
-        { val: "2KB", label: "Gzipped" },
-        { val: "100%", label: "TypeScript" },
-        { val: "MIT", label: "License" }
-      ],
-      aria: {
-        carousel: "Featured Riyils",
-        activeSlide: "View Fullscreen",
-        inactiveSlide: "Switch video",
-        watch: "Watch Now",
-        close: "Close Viewer",
-        speed: "Playback Speed",
-        forward: "Fast Forward",
-        rewind: "Rewind",
-        play: 'Play',
-        pause: 'Pause',
-        mute: 'Mute',
-        unmute: 'Unmute',
-        videoPlayer: 'Video player',
-      }
-    };
+        { v: '2KB', l: 'Gzipped' },
+        { v: '100%', l: 'TypeScript' },
+        { v: 'MIT', l: 'License' }
+      ]
+    }
 
-    const initialVideos = [
-      {
-        id: '1',
-        videoUrl: 'https://illegal-instruction-co.github.io/react-riyils/assets/1.mp4'
-      },
-      {
-        id: '2',
-        videoUrl: 'https://illegal-instruction-co.github.io/react-riyils/assets/2.mp4'
-      },
-      {
-        id: '3',
-        videoUrl: 'https://illegal-instruction-co.github.io/react-riyils/assets/3.mp4'
-      },
-      {
-        id: '4',
-        videoUrl: 'https://illegal-instruction-co.github.io/react-riyils/assets/4.mp4'
-      },
-      {
-        id: '5',
-        videoUrl: 'https://stream-akamai.castr.com/5b9352dbda7b8c769937e459/live_2361c920455111ea85db6911fe397b9e/index.fmp4.m3u8'
-      },
-      {
-        id: '6',
-        videoUrl: 'https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8'
-      },
-    ];
+    const BASE_VIDEOS = [
+      { id: '1', videoUrl: 'https://illegal-instruction-co.github.io/react-riyils/assets/1.mp4' },
+      { id: '2', videoUrl: 'https://illegal-instruction-co.github.io/react-riyils/assets/2.mp4' },
+      { id: '3', videoUrl: 'https://illegal-instruction-co.github.io/react-riyils/assets/3.mp4' },
+      { id: '4', videoUrl: 'https://illegal-instruction-co.github.io/react-riyils/assets/4.mp4' },
+      { id: '5', videoUrl: 'https://stream-akamai.castr.com/5b9352dbda7b8c769937e459/live_2361c920455111ea85db6911fe397b9e/index.fmp4.m3u8' },
+      { id: '6', videoUrl: 'https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8' }
+    ]
 
     function App() {
-      const [videos, setVideos] = useState(initialVideos);
-      const [currentIndex, setCurrentIndex] = useState(0);
-      const [showViewer, setShowViewer] = useState(false);
-      const isLoadingRef = useRef(false);
-
-      const carouselTranslations = useMemo(() => ({
-        ctaButton: TEXT_CONTENT.aria.watch,
-        carouselAriaLabel: TEXT_CONTENT.aria.carousel,
-        slideActiveAriaLabel: TEXT_CONTENT.aria.activeSlide,
-        slideInactiveAriaLabel: TEXT_CONTENT.aria.inactiveSlide
-      }), []);
-
-      const viewerTranslations = useMemo(() => ({
-        close: TEXT_CONTENT.aria.close,
-        speedIndicator: TEXT_CONTENT.aria.speed,
-        forward: TEXT_CONTENT.aria.forward,
-        rewind: TEXT_CONTENT.aria.rewind,
-        play: TEXT_CONTENT.aria.play,
-        pause: TEXT_CONTENT.aria.pause,
-        mute: TEXT_CONTENT.aria.mute,
-        unmute: TEXT_CONTENT.aria.unmute,
-        videoPlayer: TEXT_CONTENT.aria.videoPlayer,
-      }), []);
+      const [videos, setVideos] = useState(BASE_VIDEOS)
+      const [index, setIndex] = useState(0)
+      const [viewer, setViewer] = useState(false)
+      const loading = useRef(false)
 
       useEffect(() => {
-        if (isLoadingRef.current) return;
-        if (currentIndex >= videos.length - 2) {
-          isLoadingRef.current = true;
+        if (loading.current) return
+        if (index >= videos.length - 2) {
+          loading.current = true
           setTimeout(() => {
-            setVideos(prev => {
-              const newVideos = initialVideos.map((v, i) => ({
-                ...v,
-                id: `vid_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-              }));
-              return [...prev, ...newVideos];
-            });
-            isLoadingRef.current = false;
-          }, 800);
+            setVideos(v =>
+              v.concat(
+                BASE_VIDEOS.map(x => ({
+                  ...x,
+                  id: Math.random().toString(36).slice(2)
+                }))
+              )
+            )
+            loading.current = false
+          }, 700)
         }
-      }, [currentIndex, videos.length]);
+      }, [index, videos.length])
 
       return (
-        <div className="min-h-screen relative flex flex-col overflow-hidden">
-          <div className="blob-bg bg-blue-100 top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full mix-blend-multiply"></div>
-          <div className="blob-bg bg-indigo-100 top-[20%] right-[-10%] w-[40%] h-[40%] rounded-full mix-blend-multiply"></div>
-
-          <nav className="w-full max-w-[1400px] mx-auto px-6 py-8 flex justify-between items-center z-30">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center text-white">
-                <i className="fa-solid fa-play text-xs"></i>
-              </div>
-              <span className="font-bold text-lg tracking-tight text-slate-900">{TEXT_CONTENT.nav.brand}</span>
-            </div>
-            <a href={TEXT_CONTENT.nav.githubUrl} className="text-slate-400 hover:text-slate-900 transition-colors">
-              <i className="fa-brands fa-github text-xl"></i>
-            </a>
-          </nav>
-
-          <main className="flex-grow flex flex-col items-center relative z-10 w-full">
-            <div className="text-center max-w-4xl mx-auto px-6 mt-4 mb-12">
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50/50 border border-blue-100 rounded-full mb-6">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                <span className="text-xs font-bold text-blue-600 uppercase tracking-wide">{TEXT_CONTENT.hero.badge}</span>
+        <div className="app">
+          <header className="container">
+            <nav className="nav" aria-label="Primary">
+              <div className="brand" aria-label={TEXT.brand}>
+                <div className="brandMark" aria-hidden="true">
+                  <i className="fa-solid fa-play"></i>
+                </div>
+                <span className="brandName">{TEXT.brand}</span>
               </div>
 
-              <h1 className="text-6xl md:text-8xl font-extrabold tracking-tighter text-slate-900 mb-6 leading-[0.95]">
-                {TEXT_CONTENT.hero.headlinePrefix} <br />
-                <span className="gradient-text">{TEXT_CONTENT.hero.headlineGradient}</span>
-              </h1>
-
-              <p className="text-lg text-slate-500 font-medium max-w-xl mx-auto">
-                {TEXT_CONTENT.hero.subheadline}
-              </p>
-            </div>
-
-            <div className="w-full relative py-8">
-              <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-blue-50/20 to-transparent blur-3xl -z-10"></div>
-
-              <ReactRiyils
-                videos={videos}
-                currentIndex={currentIndex}
-                onVideoClick={() => {
-                  setShowViewer(true)
-                }}
-                onVideoChange={setCurrentIndex}
-                translations={carouselTranslations}
-                containerHeightDesktop={500}
-                containerHeightMobile={500}
-                enableAutoAdvance={true}
-              />
-            </div>
-
-            <div className="mt-12 flex flex-col items-center gap-10">
-              <div className="flex gap-4">
-                <button className="px-8 py-3.5 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/10 flex items-center gap-2">
-                  {TEXT_CONTENT.hero.ctaPrimary}
-                </button>
-                <a href={TEXT_CONTENT.nav.githubUrl} className="px-8 py-3.5 bg-white text-slate-700 font-bold rounded-xl border border-slate-200 hover:bg-slate-50 transition-all flex items-center gap-2">
+              <div className="navRight">
+                <a className="iconBtn" href={TEXT.github} aria-label="GitHub" target="_blank" rel="noreferrer">
                   <i className="fa-brands fa-github"></i>
-                  {TEXT_CONTENT.hero.ctaSecondary}
                 </a>
               </div>
+            </nav>
+          </header>
 
-              <div className="flex gap-12 pt-6 border-t border-slate-100">
-                {TEXT_CONTENT.stats.map((stat, i) => (
-                  <div key={i} className="text-center">
-                    <div className="text-2xl font-bold text-slate-900">{stat.val}</div>
-                    <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">{stat.label}</div>
+          <main className="main">
+            <section className="container hero">
+              <div className="heroInner fadeUp">
+                <div>
+                  <div className="badge" role="note" aria-label={TEXT.tagline}>
+                    <span className="badgeDot" aria-hidden="true"></span>
+                    <span className="badgeText">{TEXT.tagline}</span>
+                  </div>
+
+                  <h1 className="h1">
+                    {TEXT.heroTitleA}
+                    <br />
+                    <span className="gradientText">{TEXT.heroTitleB}</span>
+                  </h1>
+
+                  <p className="sub">{TEXT.heroSubtitle}</p>
+
+                  <div className="mono monoBlock" aria-hidden="true">
+                    <div>No autoplay hacks.</div>
+                    <div>No race conditions.</div>
+                    <div>Just predictable video state.</div>
+                  </div>
+                </div>
+
+                <aside className="heroSide" aria-label="Status">
+                  <div className="panelRow">
+                    <div className="panelKey">Network</div>
+                    <div className="panelVal">{
+                      (() => {
+                        if (!navigator.onLine) return "Offline";
+                        if (navigator.connection && navigator.connection.effectiveType) {
+                          const type = navigator.connection.effectiveType;
+                          switch (type) {
+                            case 'slow-2g': return 'Slow 2G';
+                            case '2g': return '2G';
+                            case '3g': return '3G';
+                            case '4g': return '4G';
+                            default: return type;
+                          }
+                        }
+                        return 'Unknown';
+                      })()
+                    }</div>
+                  </div>
+                  <div className="panelRow">
+                    <div className="panelKey">Autoplay</div>
+                    <div className="panelVal">{typeof window !== 'undefined' && window.HTMLMediaElement && typeof window.HTMLMediaElement.prototype.play === 'function' ? "Allowed" : "Blocked"}</div>
+                  </div>
+                  <div className="panelRow">
+                    <div className="panelKey">Buffered</div>
+                    <div className="panelVal">{videos.length - index - 1} ahead</div>
+                  </div>
+                </aside>
+              </div>
+            </section>
+
+            <section className="container stage" aria-label="Demo">
+              <div className="stageGlow" aria-hidden="true"></div>
+
+              <div className="viewerWrap">
+                <div className="frame">
+                  <div className="hud" aria-hidden="true">
+                    <span className="hudDot"></span>
+                    <span className="hudText">
+                      {(() => {
+                        let network = (() => {
+                          if (!navigator.onLine) return "Offline";
+                          if (navigator.connection && navigator.connection.effectiveType) {
+                            const type = navigator.connection.effectiveType;
+                            switch (type) {
+                              case 'slow-2g': return 'Slow 2G';
+                              case '2g': return '2G';
+                              case '3g': return '3G';
+                              case '4g': return '4G';
+                              default: return type;
+                            }
+                          }
+                          return 'Unknown';
+                        })();
+                        let autoplay = (typeof window !== 'undefined' && window.HTMLMediaElement && typeof window.HTMLMediaElement.prototype.play === 'function') ? "Allowed" : "Blocked";
+                        return `Network: ${network} · Autoplay: ${autoplay}`;
+                      })()}
+                    </span>
+                  </div>
+
+                  <div className="hudRight" aria-hidden="true">
+                    {`Buffered: ${videos.length - index - 1} ahead`}
+                  </div>
+
+                  <div className="frameInner">
+                    <ReactRiyils
+                      videos={videos}
+                      currentIndex={index}
+                      onVideoChange={setIndex}
+                      onVideoClick={() => setViewer(true)}
+                      containerHeightDesktop={520}
+                      containerHeightMobile={520}
+                      enableAutoAdvance
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="stats" aria-label="Stats">
+                {TEXT.stats.map(s => (
+                  <div className="stat" key={s.l}>
+                    <div className="statV">{s.v}</div>
+                    <div className="statL">{s.l}</div>
                   </div>
                 ))}
               </div>
-            </div>
+            </section>
           </main>
 
-          {showViewer && (
-            <div className="fixed inset-0 z-50">
+          <footer className="footer">MIT Licensed · React 18 · Swiper 11 · Built in public</footer>
+
+          {viewer && (
+            <div className="viewerOverlay" role="dialog" aria-modal="true">
               <RiyilsViewer
                 videos={videos}
-                initialIndex={currentIndex}
-                onClose={() => setShowViewer(false)}
-                onVideoChange={setCurrentIndex}
-                translations={viewerTranslations}
-                enableAutoAdvance={true}
+                initialIndex={index}
+                onVideoChange={setIndex}
+                onClose={() => setViewer(false)}
+                enableAutoAdvance
               />
             </div>
           )}
         </div>
-      );
+      )
     }
 
-    const root = createRoot(document.getElementById('root'));
-    root.render(<App />);
+    const root = createRoot(document.getElementById('root'))
+    root.render(<App />)
   </script>
 </body>
 
