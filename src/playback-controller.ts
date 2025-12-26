@@ -68,5 +68,3 @@ export class PlaybackController {
     Array.from(this.sessions.keys()).forEach((k) => this.cancelSession(k))
   }
 }
-
-export const playbackController = new PlaybackController()

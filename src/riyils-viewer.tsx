@@ -22,6 +22,7 @@ import { useRiyilsGestures, type GestureIntent, type GestureZone } from './viewe
 import { useRiyilsKeyboard } from './viewer/useRiyilsKeyboard'
 import { useRiyilsPlayback } from './viewer/useRiyilsPlayback'
 import { useRiyilsPreload } from './viewer/useRiyilsPreload'
+import { PlaybackControllerProvider } from './playback/PlaybackControllerContext'
 
 import 'swiper/css'
 import 'swiper/css/virtual'
@@ -186,7 +187,7 @@ const RiyilsSlide = React.memo(function RiyilsSlide(
       {active && !playback.hasError && (
         <>
           <div className={`react-riyils-viewer__feedback-speed ${playback.isSpeedUp ? 'visible' : ''}`}>
-            <Zap size={16} fill="currentColor" className="text-yellow-400" />
+            <Zap size={16} fill="currentColor" />
             <span>{t.speedIndicator}</span>
           </div>
 
@@ -272,7 +273,7 @@ function VideoEl(
   )
 }
 
-export function RiyilsViewer({
+function RiyilsViewerInner({
   videos,
   initialIndex = 0,
   onClose,
@@ -301,7 +302,12 @@ export function RiyilsViewer({
 
   const { preloadAround } = useRiyilsPreload(videos, currentIndex, initialIndex)
 
-  const { playbackState, playbackHandlers } = useRiyilsPlayback(getVideoEl, getActiveId, currentIndex, enableAutoAdvance)
+  const { playbackState, playbackHandlers } = useRiyilsPlayback(
+    getVideoEl,
+    getActiveId,
+    currentIndex,
+    enableAutoAdvance
+  )
 
   const showPlayPauseOnce = useCallback(() => {
     setShowPlayPauseIcon(true)
@@ -347,7 +353,10 @@ export function RiyilsViewer({
     [handleSeek, playbackHandlers, playbackState.hasError, togglePlay]
   )
 
-  const { onZoneClick, onStartSpeed, onStopSpeed } = useRiyilsGestures(handleGestureIntent, playbackState.hasError)
+  const { onZoneClick, onStartSpeed, onStopSpeed } = useRiyilsGestures(
+    handleGestureIntent,
+    playbackState.hasError
+  )
 
   useRiyilsKeyboard(onClose, togglePlay, playbackHandlers.toggleMute)
 
@@ -545,5 +554,13 @@ export function RiyilsViewer({
         }
       `}</style>
     </div>
+  )
+}
+
+export function RiyilsViewer(props: Readonly<RiyilsViewerProps>) {
+  return (
+    <PlaybackControllerProvider>
+      <RiyilsViewerInner {...props} />
+    </PlaybackControllerProvider>
   )
 }

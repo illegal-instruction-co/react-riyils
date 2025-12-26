@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { playbackController } from '../playback-controller'
+import { usePlaybackController } from '../playback/PlaybackControllerContext'
 import { resetVideoSource } from '../use-video-source'
 
 const PLAY_VERIFY_MS = 260
@@ -10,6 +10,8 @@ export function useRiyilsPlayback(
     currentIndex: number,
     enableAutoAdvance: boolean
 ) {
+    const playbackController = usePlaybackController()
+
     const [isMuted, setIsMuted] = useState(true)
     const [isSpeedUp, setIsSpeedUp] = useState(false)
     const [isPlaying, setIsPlaying] = useState(true)
@@ -56,7 +58,16 @@ export function useRiyilsPlayback(
         }
 
         setIsPlaying(false)
-    }, [currentIndex, getActiveId, getVideoEl, hasError, isMuted, isPlaying, isSpeedUp])
+    }, [
+        currentIndex,
+        getActiveId,
+        getVideoEl,
+        hasError,
+        isMuted,
+        isPlaying,
+        isSpeedUp,
+        playbackController,
+    ])
 
     useEffect(() => {
         void applyPlayback()
@@ -84,13 +95,10 @@ export function useRiyilsPlayback(
         [currentIndex, getVideoEl, hasError]
     )
 
-    const onTimeUpdate = useCallback(
-        (e: React.SyntheticEvent<HTMLVideoElement>) => {
-            const v = e.currentTarget
-            if (!v || v.duration <= 0) return
-        },
-        []
-    )
+    const onTimeUpdate = useCallback((e: React.SyntheticEvent<HTMLVideoElement>) => {
+        const v = e.currentTarget
+        if (!v || v.duration <= 0) return
+    }, [])
 
     const onEnded = useCallback(() => {
         if (!enableAutoAdvance) return
@@ -105,7 +113,7 @@ export function useRiyilsPlayback(
         setIsPlaying(false)
         const id = getActiveId()
         if (id) playbackController.reset('viewer', id)
-    }, [getActiveId])
+    }, [getActiveId, playbackController])
 
     const onRetry = useCallback(() => {
         const id = getActiveId()
@@ -119,7 +127,7 @@ export function useRiyilsPlayback(
             v.load()
             void applyPlayback()
         }
-    }, [applyPlayback, currentIndex, getActiveId, getVideoEl])
+    }, [applyPlayback, currentIndex, getActiveId, getVideoEl, playbackController])
 
     const playbackState = useMemo(
         () => ({

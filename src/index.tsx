@@ -10,6 +10,7 @@ import { CarouselSlide } from './carousel/CarouselSlide'
 import { useCarouselPlayback } from './carousel/useCarouselPlayback'
 import { useCarouselPreload } from './carousel/useCarouselPreload'
 import { useCarouselRegistry } from './carousel/useCarouselRegistry'
+import { PlaybackControllerProvider } from './playback/PlaybackControllerContext'
 
 import './video-swiper.css'
 import 'swiper/css'
@@ -79,12 +80,7 @@ function CarouselSlideContainer({
 
   useVideoSource(videoRef, 'carousel', video.id, video.videoUrl, shouldLoad)
 
-  const playback = useCarouselPlayback(
-    videoRef,
-    isActive,
-    isPreview,
-    shouldLoad
-  )
+  const playback = useCarouselPlayback(videoRef, isActive, isPreview, shouldLoad)
 
   return (
     <CarouselSlide
@@ -100,7 +96,7 @@ function CarouselSlideContainer({
   )
 }
 
-export function ReactRiyils({
+function ReactRiyilsInner({
   videos,
   currentIndex = 0,
   onVideoClick,
@@ -218,6 +214,14 @@ export function ReactRiyils({
         onAdvance={handleActiveVideoEnded}
       />
     </section>
+  )
+}
+
+export function ReactRiyils(props: Readonly<ReactRiyilsProps>) {
+  return (
+    <PlaybackControllerProvider>
+      <ReactRiyilsInner {...props} />
+    </PlaybackControllerProvider>
   )
 }
 
