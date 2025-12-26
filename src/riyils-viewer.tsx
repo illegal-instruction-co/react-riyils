@@ -423,6 +423,17 @@ function RiyilsViewerInner({
     if (v.duration > 0) progressBarRef.current?.update((v.currentTime / v.duration) * 100)
   }, [])
 
+  const handleProgressBarSeek = useCallback((percent: number) => {
+    const v = getVideoEl(currentIndex);
+    const id = getActiveId();
+    if (!v || !id || Number.isNaN(v.duration) || v.duration === Infinity) return;
+
+    const newTime = (percent / 100) * v.duration;
+    v.currentTime = newTime;
+
+    observer.seek(id, 0, 'gesture');
+  }, [currentIndex, getActiveId, getVideoEl, observer]);
+
   const handleVideoEnded = useCallback(() => {
     if (!enableAutoAdvance) return
     const swiper = swiperRef.current
@@ -512,7 +523,11 @@ function RiyilsViewerInner({
   return (
     <div ref={containerRef} className="react-riyils-viewer">
       <div className="react-riyils-viewer__gradient-top" />
-      <ProgressBar ref={progressBarRef} color={progressBarColor} />
+      <ProgressBar
+        ref={progressBarRef}
+        color={progressBarColor}
+        onSeek={handleProgressBarSeek}
+      />
       <div className="react-riyils-viewer__close-container">
         <button
           type="button"

@@ -1,4 +1,4 @@
-import React, { useImperativeHandle, useRef, forwardRef } from 'react';
+import React, { useImperativeHandle, forwardRef, useState, useCallback } from 'react';
 
 export interface ProgressBarRef {
     update: (percent: number) => void;
@@ -6,25 +6,39 @@ export interface ProgressBarRef {
 
 interface ProgressBarProps {
     color?: string;
+    onSeek?: (percent: number) => void;
 }
 
-export const ProgressBar = forwardRef<ProgressBarRef, ProgressBarProps>(({ color = '#fff' }, ref) => {
-    const fillRef = useRef<HTMLDivElement>(null);
+export const ProgressBar = forwardRef<ProgressBarRef, ProgressBarProps>(({ color = '#fff', onSeek }, ref) => {
+    const [progress, setProgress] = useState(0);
 
     useImperativeHandle(ref, () => ({
         update: (percent: number) => {
-            if (fillRef.current) {
-                fillRef.current.style.width = `${percent}%`;
-            }
+            setProgress(percent);
         },
     }));
 
+    const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = Number.parseFloat(e.target.value);
+        setProgress(value);
+        if (onSeek) onSeek(value);
+    }, [onSeek]);
+
     return (
         <div className="react-riyils-viewer__progress-container">
-            <div
-                ref={fillRef}
-                className="react-riyils-viewer__progress-fill"
-                style={{ width: '0%', background: color, transition: 'width 0.1s linear' }}
+            <input
+                type="range"
+                min="0"
+                max="100"
+                step="0.1"
+                value={progress}
+                onChange={handleChange}
+                className="react-riyils-viewer__progress-input"
+                aria-label="Video progress"
+                style={{
+                    '--progress-width': `${progress}%`,
+                    '--progress-color': color
+                } as React.CSSProperties}
             />
         </div>
     );
