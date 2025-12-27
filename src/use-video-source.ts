@@ -127,7 +127,7 @@ async function attemptPlay(video: HTMLVideoElement): Promise<AttemptResult> {
         if (err?.name === 'NotAllowedError') {
             return 'not-allowed'
         }
-        console.error('Video play error:', err)
+
         return 'failed'
     }
 }
@@ -354,16 +354,14 @@ export function useVideoSource(
 
     useEffect(() => {
         const video = videoRef.current
-        if (!video) return
+        if (!video || !shouldLoad) return
 
-        const delay = 0
-
-        const timer = globalThis.window.setTimeout(() => {
-            videoSourceManager.attach(video, key, src)
-        }, delay)
+        videoSourceManager.attach(video, key, src)
 
         return () => {
-            globalThis.window.clearTimeout(timer)
+            if (video) {
+                videoSourceManager.detach(key, video, scope)
+            }
         }
     }, [key, scope, shouldLoad, src, videoRef])
 

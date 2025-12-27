@@ -10,17 +10,15 @@ export function useSnapScroll({ axis, onIndexChange }: UseSnapScrollOptions) {
     const containerRef = useRef<HTMLDivElement>(null)
     const [activeIndex, setActiveIndex] = useState(0)
 
-    // Drag State
     const isDown = useRef(false)
     const startX = useRef(0)
     const startY = useRef(0)
     const scrollLeft = useRef(0)
     const scrollTop = useRef(0)
-    const isDragging = useRef(false) // Tıklama ile sürüklemeyi ayırt etmek için
+    const isDragging = useRef(false)
 
     const scrollTimeoutRef = useRef<number | null>(null)
 
-    // --- Scroll Handler (Index Hesaplama) ---
     const handleScroll = useCallback(() => {
         const container = containerRef.current
         if (!container) return
@@ -29,12 +27,10 @@ export function useSnapScroll({ axis, onIndexChange }: UseSnapScrollOptions) {
             clearTimeout(scrollTimeoutRef.current)
         }
 
-        // Scroll bittiğinde (debounce) index hesapla
         scrollTimeoutRef.current = globalThis.window.setTimeout(() => {
             const scrollPos = axis === 'x' ? container.scrollLeft : container.scrollTop
             const size = axis === 'x' ? container.clientWidth : container.clientHeight
 
-            // Sıfıra bölünme hatasını önle
             if (size === 0) return
 
             const newIndex = Math.round(scrollPos / size)
@@ -46,7 +42,6 @@ export function useSnapScroll({ axis, onIndexChange }: UseSnapScrollOptions) {
         }, 50)
     }, [activeIndex, axis, onIndexChange])
 
-    // --- Programatik Scroll ---
     const scrollTo = useCallback((index: number, smooth = true) => {
         const container = containerRef.current
         if (!container) return
@@ -62,7 +57,6 @@ export function useSnapScroll({ axis, onIndexChange }: UseSnapScrollOptions) {
         setActiveIndex(index)
     }, [axis])
 
-    // --- Mouse Drag Events ---
     useEffect(() => {
         const container = containerRef.current
         if (!container) return
@@ -72,7 +66,6 @@ export function useSnapScroll({ axis, onIndexChange }: UseSnapScrollOptions) {
             isDragging.current = false
             container.style.cursor = 'grabbing'
 
-            // Snap özelliğini kapat ki rahat sürüklensin
             container.style.scrollSnapType = 'none'
             container.style.userSelect = 'none'
 
@@ -95,11 +88,9 @@ export function useSnapScroll({ axis, onIndexChange }: UseSnapScrollOptions) {
             isDown.current = false
             container.style.cursor = 'grab'
 
-            // Snap'i geri aç, tarayıcı en yakın slayta kayar
             container.style.scrollSnapType = axis === 'x' ? 'x mandatory' : 'y mandatory'
             container.style.removeProperty('user-select')
 
-            // Eğer hiç sürüklenmediyse click sayılır, sürüklendiyse eventleri durdurabiliriz
             setTimeout(() => { isDragging.current = false }, 0)
         }
 
@@ -110,11 +101,9 @@ export function useSnapScroll({ axis, onIndexChange }: UseSnapScrollOptions) {
             const x = e.pageX - container.offsetLeft
             const y = e.pageY - container.offsetTop
 
-            // Hareket miktarını hesapla
-            const walkX = (x - startX.current) * 1.5 // Hız çarpanı
+            const walkX = (x - startX.current) * 1.5
             const walkY = (y - startY.current) * 1.5
 
-            // Küçük titremeleri sürükleme sayma (Threshold: 5px)
             if (Math.abs(walkX) > 5 || Math.abs(walkY) > 5) {
                 isDragging.current = true
             }
@@ -126,7 +115,6 @@ export function useSnapScroll({ axis, onIndexChange }: UseSnapScrollOptions) {
             }
         }
 
-        // Listener'ları ekle
         container.addEventListener('scroll', handleScroll, { passive: true })
         container.addEventListener('mousedown', onMouseDown)
         container.addEventListener('mouseleave', onMouseLeave)
@@ -146,6 +134,6 @@ export function useSnapScroll({ axis, onIndexChange }: UseSnapScrollOptions) {
         containerRef,
         activeIndex,
         scrollTo,
-        isDragging // Tıklama olaylarında kontrol etmek için dışarı açıyoruz
+        isDragging
     }
 }

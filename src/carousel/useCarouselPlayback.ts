@@ -82,7 +82,7 @@ export function useCarouselPlayback(
             } catch (err) {
                 if (isCancelled || !mountedRef.current) return
 
-                console.error('Video play error:', err);
+
 
                 retryRef.current = globalThis.window.setTimeout(tryPlay, RETRY_MS)
             }

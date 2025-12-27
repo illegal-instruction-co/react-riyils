@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import { Keyboard, Mousewheel, Virtual } from 'swiper/modules'
 import type { Swiper as SwiperType } from 'swiper'
@@ -17,7 +18,10 @@ import {
   X,
   Zap,
   PictureInPicture2,
+  Minimize2,
+  Maximize2,
 } from 'lucide-react'
+import { MiniPlayer } from './mini-player'
 import { useVideoSource, type VideoQualityVariants } from './use-video-source'
 import { ProgressBar, type ProgressBarRef } from './progress-bar'
 import { useVideoRegistry } from './viewer/useVideoRegistry'
@@ -528,10 +532,10 @@ function RiyilsViewerInner({
   const defaultControls = useMemo<RiyilsViewerControl[]>(() => [
     {
       id: 'pip',
-      icon: <PictureInPicture2 size={24} />,
-      ariaLabel: 'Picture in Picture',
+      icon: isPipActive ? <Maximize2 size={24} /> : <Minimize2 size={24} />,
+      ariaLabel: isPipActive ? 'Expand' : 'Minimize',
       onClick: () => { void togglePip(); },
-      visible: () => typeof document !== 'undefined' && document.pictureInPictureEnabled,
+      visible: true,
       className: 'react-riyils-viewer__btn-pip',
     },
     {
@@ -562,19 +566,8 @@ function RiyilsViewerInner({
   }, [playbackHandlers, playbackState.hasError, showPlayPauseOnce])
 
   const togglePip = useCallback(async () => {
-    const v = getVideoEl(currentIndex);
-    if (!v) return;
-
-    try {
-      if (document.pictureInPictureElement) {
-        await document.exitPictureInPicture();
-      } else if (document.pictureInPictureEnabled) {
-        await v.requestPictureInPicture();
-      }
-    } catch (err) {
-      console.error("pip toggle error:", err);
-    }
-  }, [currentIndex, getVideoEl]);
+    setIsPipActive(prev => !prev)
+  }, []);
 
   const handleGestureIntent = useCallback(
     (intent: GestureIntent) => {
@@ -799,8 +792,9 @@ function RiyilsViewerInner({
             }}
             aria-label="Previous video"
           >
-            <ChevronUp size={24} />
+            <ChevronUp size={24} strokeWidth={3} />
           </button>
+
           <button
             type="button"
             className="react-riyils-viewer__btn react-riyils-viewer__btn-nav"
@@ -810,68 +804,77 @@ function RiyilsViewerInner({
             }}
             aria-label="Next video"
           >
-            <ChevronDown size={24} />
+            <ChevronDown size={24} strokeWidth={3} />
           </button>
         </div>
       )}
 
       <div className="react-riyils-viewer__gradient-bottom">
         <div className="react-riyils-viewer__controls-row">
-          {mergedControls.map(ctrl => {
-            const visible =
-              typeof ctrl.visible === 'function'
-                ? ctrl.visible({
-                  currentIndex,
-                  video: videos[currentIndex],
-                  isMuted: playbackState.isMuted,
-                  isPlaying: playbackState.isPlaying,
-                  togglePlay: playbackHandlers.togglePlay,
-                  toggleMute: playbackHandlers.toggleMute,
-                })
-                : ctrl.visible !== false
+          {mergedControls
+            .filter((c) => {
+              if (typeof c.visible === 'function') return c.visible({
+                currentIndex,
+                video: videos[currentIndex],
+                isMuted: playbackState.isMuted,
+                isPlaying: playbackState.isPlaying,
+                togglePlay,
+                toggleMute: playbackHandlers.toggleMute
+              })
+              return c.visible ?? true
+            })
+            .map((c) => {
+              const ctx: RiyilsViewerControlContext = {
+                currentIndex,
+                video: videos[currentIndex],
+                isMuted: playbackState.isMuted,
+                isPlaying: playbackState.isPlaying,
+                togglePlay,
+                toggleMute: playbackHandlers.toggleMute
+              }
+              const isActive = typeof c.active === 'function' ? c.active(ctx) : (c.active ?? false)
 
-            if (!visible) return null
-
-            const active =
-              typeof ctrl.active === 'function'
-                ? ctrl.active({
-                  currentIndex,
-                  video: videos[currentIndex],
-                  isMuted: playbackState.isMuted,
-                  isPlaying: playbackState.isPlaying,
-                  togglePlay: playbackHandlers.togglePlay,
-                  toggleMute: playbackHandlers.toggleMute,
-                })
-                : !!ctrl.active
-
-            return (
-              <button
-                key={ctrl.id}
-                type="button"
-                className={`react-riyils-viewer__btn ${ctrl.className ?? ''} ${active ? 'active' : ''}`}
-                aria-label={ctrl.ariaLabel}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  ctrl.onClick({
-                    currentIndex,
-                    video: videos[currentIndex],
-                    isMuted: playbackState.isMuted,
-                    isPlaying: playbackState.isPlaying,
-                    togglePlay: playbackHandlers.togglePlay,
-                    toggleMute: playbackHandlers.toggleMute,
-                  })
-                }}
-              >
-                {ctrl.icon}
-              </button>
-            )
-          })}
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  className={`react-riyils-viewer__btn ${c.className ?? ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    c.onClick(ctx)
+                  }}
+                  aria-label={c.ariaLabel}
+                  aria-pressed={isActive}
+                  style={isActive ? { background: 'rgba(255, 255, 255, 0.9)', color: '#000' } : undefined}
+                >
+                  {c.icon}
+                </button>
+              )
+            })}
         </div>
       </div>
+
+      {isPipActive && (
+        createPortal(
+          <MiniPlayer
+            videoEl={getVideoEl(currentIndex)!}
+            onClose={() => {
+              setIsPipActive(false)
+              onClose()
+            }}
+            onMaximize={() => setIsPipActive(false)}
+          />,
+          document.body
+        )
+      )}
+
     </div>
   )
 }
 
-export function RiyilsViewer(props: RiyilsViewerProps) {
-  return <RiyilsViewerInner {...props} />
+function RiyilsViewer(props: RiyilsViewerProps) {
+  if (typeof document === 'undefined') return null
+  return createPortal(<RiyilsViewerInner {...props} />, document.body)
 }
+
+export { RiyilsViewer, RiyilsViewerInner }
