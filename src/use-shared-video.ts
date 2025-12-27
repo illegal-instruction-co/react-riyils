@@ -5,7 +5,8 @@ export function useSharedVideo(
     containerRef: React.RefObject<HTMLDivElement | null>,
     videoId: string,
     className: string,
-    shouldLoad: boolean
+    shouldLoad: boolean,
+    posterUrl?: string
 ) {
     const videoElementRef = useRef<HTMLVideoElement | null>(null)
 
@@ -13,7 +14,7 @@ export function useSharedVideo(
         const container = containerRef.current
         if (!container || !shouldLoad) return
 
-        const video = VideoElementPool.move(videoId, container, className)
+        const video = VideoElementPool.move(videoId, container, className, posterUrl)
         videoElementRef.current = video
 
         return () => {
@@ -21,7 +22,7 @@ export function useSharedVideo(
                 video.remove()
             }
         }
-    }, [videoId, containerRef, className, shouldLoad])
+    }, [videoId, containerRef, className, shouldLoad, posterUrl])
 
     return videoElementRef
 }

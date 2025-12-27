@@ -32,7 +32,7 @@ export const CarouselSlideContainer = React.memo(function CarouselSlideContainer
 }>) {
     const containerRef = useRef<HTMLDivElement>(null)
 
-    const videoRef = useSharedVideo(containerRef, video.id, 'react-riyils__video', shouldLoad)
+    const videoRef = useSharedVideo(containerRef, video.id, 'react-riyils__video', shouldLoad, video.thumbnailUrl)
 
     useEffect(() => {
         const el = videoRef.current

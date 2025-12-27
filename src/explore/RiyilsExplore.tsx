@@ -52,6 +52,7 @@ function ExploreTile({
                     ref={videoRef}
                     src={videoSrc}
                     poster={item.thumbnailUrl}
+                    preload="metadata"
                     muted
                     playsInline
                     loop
