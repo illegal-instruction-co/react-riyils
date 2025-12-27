@@ -6,7 +6,6 @@ Install the package via npm or yarn:
 
 ```bash
 npm install react-riyils
-# or
 yarn add react-riyils
 ```
 
@@ -33,7 +32,7 @@ import { PlaybackControllerProvider } from 'react-riyils'
 function App() {
   return (
     <PlaybackControllerProvider>
-      {/* Your components here */}
+      {children}
     </PlaybackControllerProvider>
   )
 }

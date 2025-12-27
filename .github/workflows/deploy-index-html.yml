@@ -40,9 +40,8 @@ jobs:
       - name: Copy required assets
         run: |
           mkdir -p public
-          cp index.html public/
+          cp index.html demo.js demo.css package.json public/
           cp -r dist/ public/dist/
-          cp dist/index.css public/index.css
           cp -r assets/ public/assets/
 
       - name: Rename public to _site

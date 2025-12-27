@@ -215,7 +215,7 @@ function RiyilsViewerInner({
 
     const showPlayPauseOnce = useCallback(() => {
         setShowPlayPauseIcon(true)
-        globalThis.globalThis.window.setTimeout(() => setShowPlayPauseIcon(false), FEEDBACK_ANIMATION_MS)
+        globalThis.window.setTimeout(() => setShowPlayPauseIcon(false), FEEDBACK_ANIMATION_MS)
     }, [])
 
     const togglePlay = useCallback(() => {
@@ -235,7 +235,7 @@ function RiyilsViewerInner({
                 triggerHaptic()
                 playbackHandlers.seek(intent.delta, 'gesture')
                 setSeekFeedback(intent.delta > 0 ? 'forward' : 'rewind')
-                globalThis.globalThis.window.setTimeout(() => setSeekFeedback(null), FEEDBACK_ANIMATION_MS)
+                globalThis.window.setTimeout(() => setSeekFeedback(null), FEEDBACK_ANIMATION_MS)
                 return
             }
             if (intent.type === 'toggle-play') {
@@ -271,8 +271,8 @@ function RiyilsViewerInner({
 
     useEffect(() => {
         setShowScrollHint(true)
-        const tmr = globalThis.globalThis.window.setTimeout(() => setShowScrollHint(false), SCROLL_HINT_MS)
-        return () => globalThis.globalThis.window.clearTimeout(tmr)
+        const tmr = globalThis.window.setTimeout(() => setShowScrollHint(false), SCROLL_HINT_MS)
+        return () => globalThis.window.clearTimeout(tmr)
     }, [currentIndex])
 
     const handleTimeUpdate = useCallback((e: Event) => {
