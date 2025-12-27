@@ -33,48 +33,48 @@ export function useRiyilsObserver(
     return useMemo(
         () => ({
             play: (videoId: string, reason: 'user' | 'auto' | 'resume') =>
-                emit({ type: 'play', videoId, reason }),
+                emit({ type: 'play', videoId, reason, level: 'info' } as any),
 
             pause: (
                 videoId: string,
                 reason: 'user' | 'auto' | 'error' | 'visibility'
             ) =>
-                emit({ type: 'pause', videoId, reason }),
+                emit({ type: 'pause', videoId, reason, level: 'info' } as any),
 
             mute: (
                 videoId: string,
                 muted: boolean,
                 reason: 'user' | 'autoplay'
             ) =>
-                emit({ type: 'mute', videoId, muted, reason }),
+                emit({ type: 'mute', videoId, muted, reason, level: 'info' } as any),
 
             seek: (
                 videoId: string,
                 delta: number,
                 method: 'gesture' | 'keyboard'
             ) =>
-                emit({ type: 'seek', videoId, delta, method }),
+                emit({ type: 'seek', videoId, delta, method, level: 'info' } as any),
 
             ended: (videoId: string, autoAdvance: boolean) =>
-                emit({ type: 'ended', videoId, autoAdvance }),
+                emit({ type: 'ended', videoId, autoAdvance, level: 'info' } as any),
 
             error: (
                 videoId: string,
                 error: 'network' | 'decode' | 'autoplay-blocked' | 'unknown'
             ) =>
-                emit({ type: 'error', videoId, error }),
+                emit({ type: 'error', videoId, error, level: 'error' } as any),
 
             retry: (videoId: string) =>
-                emit({ type: 'retry', videoId }),
+                emit({ type: 'retry', videoId, level: 'warn' } as any),
 
             heartbeat: (videoId: string, position: number, duration: number) =>
-                emit({ type: 'heartbeat', videoId, position, duration }),
+                emit({ type: 'heartbeat', videoId, position, duration, level: 'debug' } as any),
 
             waiting: (videoId: string) =>
-                emit({ type: 'waiting', videoId }),
+                emit({ type: 'waiting', videoId, level: 'debug' } as any),
 
             playing: (videoId: string) =>
-                emit({ type: 'playing', videoId }),
+                emit({ type: 'playing', videoId, level: 'debug' } as any),
         }),
         [emit]
     )
