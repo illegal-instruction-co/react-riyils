@@ -64,11 +64,6 @@ export function useRiyilsGestures(
             e.stopPropagation()
             if (disabled) return
 
-            if (suppressNextClick.current) {
-                suppressNextClick.current = false
-                return
-            }
-
             if (longPressTriggered.current) {
                 longPressTriggered.current = false
                 return
@@ -105,6 +100,12 @@ export function useRiyilsGestures(
 
             clearTimer(doubleTapTimer)
             doubleTapTimer.current = globalThis.window.setTimeout(() => {
+                if (suppressNextClick.current) {
+                    suppressNextClick.current = false
+                    doubleTapTimer.current = null
+                    return
+                }
+
                 onIntent({ type: 'toggle-play' })
                 doubleTapTimer.current = null
             }, DOUBLE_TAP_DELAY_MS)

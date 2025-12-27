@@ -60,6 +60,7 @@ export function useRiyilsPlayback(
     const waitingTimeoutRef = useRef<number | null>(null)
     const activeIdRef = useRef<string | undefined>()
     const mountedRef = useRef(true)
+    const lastSeekTsRef = useRef(0)
 
     useEffect(() => {
         mountedRef.current = true
@@ -78,9 +79,16 @@ export function useRiyilsPlayback(
         if (!video || !id || hasError) return
         if (id !== activeIdRef.current) return
 
+        const now = Date.now()
+        if (now - lastSeekTsRef.current < 300) {
+            return
+        }
+
         if (video.readyState < 2) {
-            if (mountedRef.current) setHasStarted(false)
-            video.load()
+            if (now - lastSeekTsRef.current > 800) {
+                setHasStarted(false)
+                video.load()
+            }
             return
         }
 
@@ -212,8 +220,12 @@ export function useRiyilsPlayback(
             const v = getVideoEl(currentIndex)
             const id = getActiveId()
             if (!v || hasError || !id) return
+
+            lastSeekTsRef.current = Date.now()
+
             const max = v.duration > 0 ? v.duration : Number.MAX_SAFE_INTEGER
             v.currentTime = Math.min(Math.max(v.currentTime + deltaSeconds, 0), max)
+
             observer.seek(id, deltaSeconds, method)
         },
         [currentIndex, getActiveId, getVideoEl, hasError, observer]
@@ -221,10 +233,19 @@ export function useRiyilsPlayback(
 
     const onEnded = useCallback(() => {
         const id = getActiveId()
-        if (id) observer.ended(id, enableAutoAdvance)
-        if (!enableAutoAdvance) return
         const v = getVideoEl(currentIndex)
-        if (!v || v.readyState < 3) return
+
+        if (!id || !v) return
+
+        if (v.duration > 0 && v.currentTime < v.duration - 0.2) {
+            return
+        }
+
+        observer.ended(id, enableAutoAdvance)
+
+        if (!enableAutoAdvance) return
+        if (v.readyState < 3) return
+
         v.currentTime = 0
         void applyPlayback()
     }, [applyPlayback, currentIndex, enableAutoAdvance, getActiveId, getVideoEl, observer])

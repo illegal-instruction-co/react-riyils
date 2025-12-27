@@ -600,16 +600,23 @@ function RiyilsViewerInner({
       onTimeUpdate: handleTimeUpdate,
       onEnded: () => {
         const { enableAutoAdvance, currentIndex, playbackHandlers, registry } = stateRef.current
+
+        const v = registry.get(currentIndex)
+        if (!v) return
+
+        if (v.duration > 0 && v.currentTime < v.duration - 0.2) {
+          return
+        }
+
         playbackHandlers.onEnded()
 
         if (!enableAutoAdvance) return
+
         const swiper = swiperRef.current
-        const v = registry.get(currentIndex)
-        if (!swiper || !v) return
-        if (swiper.isEnd) {
-          playbackHandlers.onEnded()
-          return
-        }
+        if (!swiper) return
+
+        if (swiper.isEnd) return
+
         swiper.slideNext()
       },
       onError: () => stateRef.current.playbackHandlers.onError(),
