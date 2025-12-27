@@ -21,6 +21,11 @@ export function MiniPlayer({ videoEl, onClose, onMaximize }: Readonly<MiniPlayer
 
         const originalParent = videoEl.parentElement
 
+        const origWidth = videoEl.style.width
+        const origHeight = videoEl.style.height
+        const origObjectFit = videoEl.style.objectFit
+        const origDisplay = videoEl.style.display
+
         videoEl.dataset.pip = 'true'
 
         host.replaceChildren(videoEl)
@@ -36,6 +41,12 @@ export function MiniPlayer({ videoEl, onClose, onMaximize }: Readonly<MiniPlayer
 
         return () => {
             delete videoEl.dataset.pip
+
+            videoEl.style.width = origWidth
+            videoEl.style.height = origHeight
+            videoEl.style.objectFit = origObjectFit
+            videoEl.style.display = origDisplay
+
             if (host.contains(videoEl) && originalParent) {
                 originalParent.appendChild(videoEl)
             }
@@ -70,97 +81,59 @@ export function MiniPlayer({ videoEl, onClose, onMaximize }: Readonly<MiniPlayer
         }
     }
 
-    const style: React.CSSProperties = {
-        position: 'fixed',
-        bottom: 'calc(20px + env(safe-area-inset-bottom))',
-        right: 'calc(20px + env(safe-area-inset-right))',
-        width: '120px',
-        height: '213px',
-        zIndex: 99999,
-        transform: `translate3d(${pos.x}px, ${pos.y}px, 0)`,
-        touchAction: 'none',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-        borderRadius: '12px',
-        overflow: 'hidden',
-        background: '#000',
-        cursor: 'grab',
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            onMaximize()
+        }
+        if (e.key === 'Escape') {
+            e.preventDefault()
+            onClose()
+        }
     }
 
     return (
         <div
             ref={rootRef}
-            className="mini-player-overlay"
-            style={style}
+            className="react-riyils-mini-player"
+            style={{ transform: `translate3d(${pos.x}px, ${pos.y}px, 0)` }}
             onPointerDown={onDown}
             onPointerMove={onMove}
             onPointerUp={onUp}
             onPointerCancel={onUp}
+            role="dialog"
+            aria-label="Mini Player"
+            tabIndex={0}
+            onKeyDown={handleKeyDown}
         >
-            <div ref={videoHostRef} style={{ width: '100%', height: '100%', pointerEvents: 'none' }} />
+            <div ref={videoHostRef} className="react-riyils-mini-player__host" />
 
-            <div
-                style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: '40px',
-                    background: 'linear-gradient(to bottom, rgba(0,0,0,0.6), transparent)',
-                    display: 'flex',
-                    justifyContent: 'flex-end',
-                    padding: '4px',
-                    gap: '4px',
-                    pointerEvents: 'auto'
-                }}
-            >
+            <div className="react-riyils-mini-player__overlay">
                 <button
                     type="button"
+                    className="react-riyils-mini-player__button"
                     aria-label="Maximize"
                     onPointerDown={(e) => e.stopPropagation()}
                     onClick={(e) => {
                         e.stopPropagation()
                         onMaximize()
                     }}
-                    style={{
-                        background: 'rgba(0,0,0,0.5)',
-                        border: 'none',
-                        color: 'white',
-                        borderRadius: '50%',
-                        width: '24px',
-                        height: '24px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer'
-                    }}
                 >
                     <Maximize2 size={14} />
                 </button>
                 <button
                     type="button"
+                    className="react-riyils-mini-player__button"
                     aria-label="Close"
                     onPointerDown={(e) => e.stopPropagation()}
                     onClick={(e) => {
                         e.stopPropagation()
                         onClose()
                     }}
-                    style={{
-                        background: 'rgba(0,0,0,0.5)',
-                        border: 'none',
-                        color: 'white',
-                        borderRadius: '50%',
-                        width: '24px',
-                        height: '24px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer'
-                    }}
                 >
                     <X size={14} />
                 </button>
             </div>
-
         </div>
     )
 }

@@ -798,9 +798,73 @@
 }
 
 .react-riyils-viewer__play-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate3d(-50%, -50%) scale(0.9);
+  z-index: 60;
+  opacity: 0;
   transition: opacity 0.25s var(--rr-whisper-bezier),
     transform 0.25s var(--rr-whisper-bezier);
   pointer-events: none;
+}
+
+.react-riyils-mini-player {
+  position: fixed;
+  bottom: calc(20px + var(--rr-safe-bot));
+  right: calc(20px + env(safe-area-inset-right));
+  width: 120px;
+  height: 213px;
+  z-index: 99999;
+  touch-action: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+  cursor: grab;
+  will-change: transform;
+}
+
+.react-riyils-mini-player__host {
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.react-riyils-mini-player__overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.6), transparent);
+  display: flex;
+  justify-content: flex-end;
+  padding: 4px;
+  gap: 4px;
+  pointer-events: auto;
+}
+
+.react-riyils-mini-player__button {
+  background: rgba(0, 0, 0, 0.5);
+  border: none;
+  color: white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 0;
+}
+
+.react-riyils-mini-player__button:focus-visible,
+.react-riyils-mini-player:focus-visible {
+  outline: 2px solid var(--rr-primary);
+  outline-offset: 2px;
 }
 
 .react-riyils-viewer__play-indicator.visible {

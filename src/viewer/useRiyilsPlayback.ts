@@ -78,7 +78,7 @@ export function useRiyilsPlayback(
     const applyPlayback = useCallback(async () => {
         const video = getVideoEl(currentIndex)
 
-        if (!video || video.readyState < 2) {
+        if (!video || video.readyState < 1) {
             return
         }
 
