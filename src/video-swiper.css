@@ -451,10 +451,31 @@
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   pointer-events: auto;
+  position: relative;
+  overflow: hidden;
+}
+
+.react-riyils-viewer__gesture-zone::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at center,
+      rgba(255, 255, 255, 0.18) 0%,
+      rgba(255, 255, 255, 0.12) 18%,
+      rgba(255, 255, 255, 0.06) 32%,
+      rgba(255, 255, 255, 0.02) 45%,
+      transparent 55%);
+  opacity: 0;
+  transform: scale(0.85);
+  transition:
+    opacity 0.12s linear,
+    transform 0.12s linear;
+  pointer-events: none;
 }
 
 .react-riyils-viewer__gesture-zone:active {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .react-riyils-viewer__feedback-center {
@@ -468,16 +489,36 @@
 }
 
 .react-riyils-viewer__feedback-icon {
-  background: transparent;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  padding: 0;
-  border-radius: 0;
+  position: relative;
   color: rgba(255, 255, 255, 0.9);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
+}
+
+.react-riyils-viewer__feedback-icon::before {
+  content: '';
+  position: absolute;
+  inset: -14px;
+  background:
+    radial-gradient(circle at center,
+      rgba(255, 255, 255, 0.18) 0%,
+      rgba(255, 255, 255, 0.12) 28%,
+      rgba(255, 255, 255, 0.06) 42%,
+      transparent 60%);
+  opacity: 0;
+  transform: scale(0.85);
+  transition:
+    opacity 0.15s linear,
+    transform 0.15s linear;
+  pointer-events: none;
+}
+
+.react-riyils-viewer__play-indicator.visible .react-riyils-viewer__feedback-icon::before {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.react-riyils-viewer__feedback-icon.animate-out::before {
+  opacity: 0;
 }
 
 .react-riyils-viewer__feedback-icon.animate-in {
@@ -745,4 +786,20 @@
   50% {
     transform: translate3d(-50%, -10px, 0);
   }
+}
+
+.react-riyils-viewer__play-indicator {
+  transition: opacity 0.25s var(--rr-whisper-bezier),
+    transform 0.25s var(--rr-whisper-bezier);
+  pointer-events: none;
+}
+
+.react-riyils-viewer__play-indicator.visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.react-riyils-viewer__play-indicator.hidden {
+  opacity: 0;
+  transform: scale(0.9);
 }

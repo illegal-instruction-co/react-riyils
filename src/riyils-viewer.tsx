@@ -72,7 +72,7 @@ export interface RiyilsViewerProps {
   readonly enableAutoAdvance?: boolean
 }
 
-const FEEDBACK_ANIMATION_MS = 400
+const FEEDBACK_ANIMATION_MS = 250
 const SCROLL_HINT_MS = 1000
 
 type SeekFeedback = 'forward' | 'rewind' | null
@@ -150,6 +150,11 @@ const RiyilsSlide = React.memo(function RiyilsSlide({
   const mounted = shouldKeepMounted(index, ui.currentIndex)
   const active = index === ui.currentIndex
 
+  useEffect(() => {
+    const el = document.querySelector('.react-riyils-viewer__gesture-zone.pressed')
+    el?.classList.remove('pressed')
+  }, [ui.currentIndex])
+
   if (!mounted) {
     return (
       <div className="react-riyils-viewer__slide">
@@ -176,27 +181,69 @@ const RiyilsSlide = React.memo(function RiyilsSlide({
           type="button"
           className="react-riyils-viewer__gesture-zone left"
           onClick={(e) => handlers.onZoneClick('left', e)}
+          onTouchStart={(e) => {
+            if (playback.hasError) return
+            e.currentTarget.classList.add('pressed')
+          }}
+          onTouchEnd={(e) => e.currentTarget.classList.remove('pressed')}
+          onTouchCancel={(e) => e.currentTarget.classList.remove('pressed')}
+          onMouseDown={(e) => e.currentTarget.classList.add('pressed')}
+          onMouseUp={(e) => e.currentTarget.classList.remove('pressed')}
+          onMouseLeave={(e) => e.currentTarget.classList.remove('pressed')}
           aria-label={t.rewind}
           disabled={playback.hasError}
         />
+
         <button
           type="button"
           className="react-riyils-viewer__gesture-zone center"
           onClick={(e) => handlers.onZoneClick('center', e)}
+          onTouchStart={(e) => {
+            if (playback.hasError) return
+            e.currentTarget.classList.add('pressed')
+          }}
+          onTouchEnd={(e) => e.currentTarget.classList.remove('pressed')}
+          onTouchCancel={(e) => e.currentTarget.classList.remove('pressed')}
+          onMouseDown={(e) => e.currentTarget.classList.add('pressed')}
+          onMouseUp={(e) => e.currentTarget.classList.remove('pressed')}
+          onMouseLeave={(e) => e.currentTarget.classList.remove('pressed')}
           aria-label={playback.isPlaying ? t.pause : t.play}
           disabled={playback.hasError}
         />
+
         <button
           type="button"
           className="react-riyils-viewer__gesture-zone right"
           onClick={(e) => handlers.onZoneClick('right', e)}
-          onTouchStart={handlers.onStartSpeed}
-          onTouchEnd={handlers.onStopSpeed}
-          onMouseDown={handlers.onStartSpeed}
-          onMouseUp={handlers.onStopSpeed}
+          onTouchStart={(e) => {
+            if (playback.hasError) return
+            e.currentTarget.classList.add('pressed')
+            handlers.onStartSpeed()
+          }}
+          onTouchEnd={(e) => {
+            e.currentTarget.classList.remove('pressed')
+            handlers.onStopSpeed()
+          }}
+          onTouchCancel={(e) => {
+            e.currentTarget.classList.remove('pressed')
+            handlers.onStopSpeed()
+          }}
+          onMouseDown={(e) => {
+            e.currentTarget.classList.add('pressed')
+            handlers.onStartSpeed()
+          }}
+          onMouseUp={(e) => {
+            e.currentTarget.classList.remove('pressed')
+            handlers.onStopSpeed()
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.classList.remove('pressed')
+            handlers.onStopSpeed()
+          }}
           aria-label={t.forward}
           disabled={playback.hasError}
         />
+
       </fieldset>
 
       {active && !playback.hasError && (
@@ -206,13 +253,14 @@ const RiyilsSlide = React.memo(function RiyilsSlide({
             <span>{t.speedIndicator}</span>
           </div>
 
-          {!playback.isPlaying && (
-            <div className="react-riyils-viewer__feedback-center">
-              <div className="react-riyils-viewer__feedback-icon animate-in">
-                <Play size={32} fill="white" />
-              </div>
+          <div
+            className={`react-riyils-viewer__feedback-center react-riyils-viewer__play-indicator ${playback.isPlaying ? 'hidden' : 'visible'
+              }`}
+          >
+            <div className="react-riyils-viewer__feedback-icon">
+              <Play size={32} fill="white" />
             </div>
-          )}
+          </div>
 
           {playback.isPlaying && ui.showPlayPauseIcon && (
             <div className="react-riyils-viewer__feedback-center">
@@ -336,7 +384,12 @@ function VideoEl({
     }
   }, [active, handlers, playback.enableAutoAdvance, playback.isMuted, video.thumbnailUrl])
 
-  const showLoading = active && !playback.hasError && (!videoRef.current || videoRef.current.readyState < 2)
+  const v = videoRef.current
+
+  const showLoading =
+    active &&
+    !playback.hasError &&
+    (!v || v.readyState < 3)
 
   return (
     <div className="react-riyils-viewer__video-wrapper">

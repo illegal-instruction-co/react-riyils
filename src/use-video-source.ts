@@ -125,9 +125,14 @@ async function attemptPlay(video: HTMLVideoElement): Promise<AttemptResult> {
     try {
         await video.play()
         return 'ok'
-    } catch (e) {
-        const err = e as { name?: string }
-        if (err?.name === 'NotAllowedError') return 'not-allowed'
+    } catch (err: any) {
+        if (err?.name === 'AbortError') {
+            return 'failed'
+        }
+        if (err?.name === 'NotAllowedError') {
+            return 'not-allowed'
+        }
+        console.error('Video play error:', err)
         return 'failed'
     }
 }
