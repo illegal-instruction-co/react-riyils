@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import { Keyboard, Mousewheel, Virtual } from 'swiper/modules'
@@ -28,6 +28,7 @@ import { RiyilsSlide, type SlideUIState } from './RiyilsSlide'
 
 import 'swiper/css'
 import 'swiper/css/virtual'
+import '../carousel/video-swiper.css'
 
 export interface Video {
     id: string
@@ -401,16 +402,28 @@ function RiyilsViewerInner({
             <Swiper
                 modules={[Keyboard, Mousewheel, Virtual]}
                 direction="vertical"
+                effect="slide"
                 initialSlide={initialIndex}
                 onSwiper={(s) => {
                     swiperRef.current = s
                 }}
                 onSlideChange={handleSlideChange}
-                speed={500}
+                speed={400}
+                threshold={5}
+                resistance={true}
+                resistanceRatio={0.85}
+                touchRatio={1}
+                followFinger={true}
+                shortSwipes={true}
+                longSwipes={true}
+                longSwipesRatio={0.1}
+                longSwipesMs={300}
+                observer={true}
+                observeParents={true}
                 mousewheel={{
                     enabled: true,
                     eventsTarget: '.react-riyils-viewer',
-                    thresholdDelta: 20,
+                    thresholdDelta: 15,
                     forceToAxis: true,
                 }}
                 virtual={{ enabled: true, addSlidesBefore: 1, addSlidesAfter: 2 }}

@@ -11,7 +11,7 @@ export function MiniPlayer({ videoEl, onClose, onMaximize }: Readonly<MiniPlayer
     const rootRef = useRef<HTMLDialogElement>(null)
     const videoHostRef = useRef<HTMLDivElement>(null)
 
-    const [pos, setPos] = useState({ x: -20, y: -80 })
+    const [pos, setPos] = useState({ x: 0, y: 0 })
     const dragStart = useRef<{ x: number; y: number } | null>(null)
     const initialPos = useRef({ x: 0, y: 0 })
 
@@ -25,6 +25,7 @@ export function MiniPlayer({ videoEl, onClose, onMaximize }: Readonly<MiniPlayer
         const origHeight = videoEl.style.height
         const origObjectFit = videoEl.style.objectFit
         const origDisplay = videoEl.style.display
+        const origPointerEvents = videoEl.style.pointerEvents
 
         videoEl.dataset.pip = 'true'
 
@@ -34,8 +35,9 @@ export function MiniPlayer({ videoEl, onClose, onMaximize }: Readonly<MiniPlayer
         videoEl.controls = false
         videoEl.style.width = '100%'
         videoEl.style.height = '100%'
-        videoEl.style.objectFit = 'cover'
+        videoEl.style.objectFit = 'contain'
         videoEl.style.display = 'block'
+        videoEl.style.pointerEvents = 'none'
 
         videoEl.play().catch(() => { })
 
@@ -46,6 +48,7 @@ export function MiniPlayer({ videoEl, onClose, onMaximize }: Readonly<MiniPlayer
             videoEl.style.height = origHeight
             videoEl.style.objectFit = origObjectFit
             videoEl.style.display = origDisplay
+            videoEl.style.pointerEvents = origPointerEvents
 
             if (host.contains(videoEl) && originalParent) {
                 originalParent.appendChild(videoEl)

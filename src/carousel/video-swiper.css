@@ -15,6 +15,7 @@
   --rr-whisper-bezier: cubic-bezier(0.2, 0, 0, 1);
   --rr-safe-bot: env(safe-area-inset-bottom, 20px);
   --rr-safe-top: env(safe-area-inset-top, 16px);
+  --rr-safe-right: env(safe-area-inset-right, 20px);
   --z-base: 1;
   --z-active: 20;
   --z-ui: 30;
@@ -239,7 +240,7 @@
   overflow: hidden;
   user-select: none;
   -webkit-user-select: none;
-  touch-action: pan-y;
+  touch-action: none;
   -webkit-touch-callout: none;
   contain: strict;
   transition: opacity 0.3s ease, visibility 0.3s ease, backdrop-filter 0.3s ease;
@@ -687,6 +688,7 @@
   justify-content: center;
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
+  pointer-events: none;
 }
 
 .react-riyils-viewer__loading~video,
@@ -813,9 +815,9 @@
 .react-riyils-mini-player {
   position: fixed;
   bottom: calc(20px + var(--rr-safe-bot));
-  right: calc(20px + env(safe-area-inset-right));
-  width: 120px;
-  height: 213px;
+  right: calc(20px + env(--rr-safe-right));
+  width: 210px;
+  height: 118px;
   z-index: 99999;
   touch-action: none;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
