@@ -16,6 +16,7 @@ import {
   VolumeX,
   X,
   Zap,
+  PictureInPicture2,
 } from 'lucide-react'
 import { useVideoSource, type VideoQualityVariants } from './use-video-source'
 import { ProgressBar, type ProgressBarRef } from './progress-bar'
@@ -107,18 +108,21 @@ function shouldKeepMounted(index: number, activeIndex: number): boolean {
   return index === activeIndex || index === activeIndex - 1 || index === activeIndex + 1
 }
 
-function useLockBodyScroll(): void {
+function useLockBodyScroll(isPipActive: boolean): void {
   useEffect(() => {
-    const body = document.body
-    const o = body.style.overflow
-    const b = body.style.overscrollBehavior
-    body.style.overflow = 'hidden'
-    body.style.overscrollBehavior = 'none'
-    return () => {
-      body.style.overflow = o
-      body.style.overscrollBehavior = b
+    if (isPipActive) {
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+    } else {
+      document.body.style.overflow = 'hidden';
+      document.body.style.touchAction = 'none';
     }
-  }, [])
+
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+    };
+  }, [isPipActive]);
 }
 
 export type PlaybackState = {
@@ -148,6 +152,7 @@ type SlideHandlers = {
   onError: () => void
   onRetry: (e: React.MouseEvent | React.TouchEvent) => void
   onContextMenu: (e: React.SyntheticEvent) => boolean
+  onPipChange: (active: boolean) => void
 }
 
 const RiyilsSlide = React.memo(function RiyilsSlide({
@@ -354,12 +359,10 @@ function VideoEl({
     if (!container || !shouldLoad) return
 
     const videoEl = document.createElement('video')
-
     videoEl.className = className
     videoEl.setAttribute('playsinline', '')
     videoEl.setAttribute('webkit-playsinline', '')
     videoEl.dataset.riyilsIndex = String(index)
-
     videoEl.preload = 'metadata'
 
     if (video.thumbnailUrl) {
@@ -367,7 +370,6 @@ function VideoEl({
     }
 
     let mounted = true
-
     const markReady = () => {
       if (!mounted) return
       if (videoEl.readyState >= 2) {
@@ -386,30 +388,19 @@ function VideoEl({
 
     container.appendChild(videoEl)
     videoRef.current = videoEl
-
     markReady()
 
     return () => {
       mounted = false
-
       videoEl.removeEventListener('loadeddata', markReady)
       videoEl.removeEventListener('canplay', markReady)
       videoEl.removeEventListener('error', markError)
-
-      try {
-        videoEl.pause()
-      } catch { }
-
+      try { videoEl.pause() } catch { }
       videoEl.removeAttribute('src')
-
-      try {
-        videoEl.load()
-      } catch { }
-
+      try { videoEl.load() } catch { }
       if (container.contains(videoEl)) {
         videoEl.remove()
       }
-
       videoRef.current = null
     }
   }, [video.id, className, shouldLoad, index, video.thumbnailUrl])
@@ -434,6 +425,8 @@ function VideoEl({
     const onTimeUpdate = handlers.onTimeUpdate
     const onEnded = handlers.onEnded
     const onError = handlers.onError
+    const handleEnterPip = () => handlers.onPipChange(true)
+    const handleLeavePip = () => handlers.onPipChange(false)
 
     const onCtx = (e: Event) => {
       e.preventDefault()
@@ -444,17 +437,20 @@ function VideoEl({
     v.addEventListener('ended', onEnded)
     v.addEventListener('error', onError)
     v.addEventListener('contextmenu', onCtx)
+    v.addEventListener('enterpictureinpicture', handleEnterPip)
+    v.addEventListener('leavepictureinpicture', handleLeavePip)
 
     return () => {
       v.removeEventListener('timeupdate', onTimeUpdate)
       v.removeEventListener('ended', onEnded)
       v.removeEventListener('error', onError)
       v.removeEventListener('contextmenu', onCtx)
+      v.removeEventListener('enterpictureinpicture', handleEnterPip)
+      v.removeEventListener('leavepictureinpicture', handleLeavePip)
     }
   }, [active, handlers, playback.enableAutoAdvance, playback.isMuted, video.thumbnailUrl])
 
   const v = videoRef.current
-
   const showLoading = active && !playback.hasError && (!v || v.readyState < 2 || !isReady)
 
   return (
@@ -484,8 +480,6 @@ function RiyilsViewerInner({
   enableAutoAdvance = false,
   controls,
 }: RiyilsViewerProps) {
-  useLockBodyScroll()
-
   const observer = useRiyilsObserver('viewer')
   const t = useMemo(() => ({ ...defaultRiyilsTranslations, ...translations }), [translations])
 
@@ -494,6 +488,8 @@ function RiyilsViewerInner({
   const [showPlayPauseIcon, setShowPlayPauseIcon] = useState(false)
   const [showScrollHint, setShowScrollHint] = useState(false)
   const [isDesktop, setIsDesktop] = useState(false)
+  const [isPipActive, setIsPipActive] = useState(false);
+  useLockBodyScroll(isPipActive)
 
   const swiperRef = useRef<SwiperType | null>(null)
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -531,6 +527,14 @@ function RiyilsViewerInner({
 
   const defaultControls = useMemo<RiyilsViewerControl[]>(() => [
     {
+      id: 'pip',
+      icon: <PictureInPicture2 size={24} />,
+      ariaLabel: 'Picture in Picture',
+      onClick: () => { void togglePip(); },
+      visible: () => typeof document !== 'undefined' && document.pictureInPictureEnabled,
+      className: 'react-riyils-viewer__btn-pip',
+    },
+    {
       id: 'mute',
       icon: playbackState.isMuted ? <VolumeX size={24} /> : <Volume2 size={24} />,
       ariaLabel: playbackState.isMuted ? t.unmute : t.mute,
@@ -556,6 +560,21 @@ function RiyilsViewerInner({
     playbackHandlers.togglePlay()
     showPlayPauseOnce()
   }, [playbackHandlers, playbackState.hasError, showPlayPauseOnce])
+
+  const togglePip = useCallback(async () => {
+    const v = getVideoEl(currentIndex);
+    if (!v) return;
+
+    try {
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+      } else if (document.pictureInPictureEnabled) {
+        await v.requestPictureInPicture();
+      }
+    } catch (err) {
+      console.error("pip toggle error:", err);
+    }
+  }, [currentIndex, getVideoEl]);
 
   const handleGestureIntent = useCallback(
     (intent: GestureIntent) => {
@@ -664,26 +683,17 @@ function RiyilsViewerInner({
       onZoneClick,
       onStartSpeed,
       onStopSpeed,
+      onPipChange: (active: boolean) => setIsPipActive(active),
       onTimeUpdate: handleTimeUpdate,
       onEnded: () => {
         const { enableAutoAdvance, currentIndex, playbackHandlers, registry } = stateRef.current
-
         const v = registry.get(currentIndex)
         if (!v) return
-
-        if (v.duration > 0 && v.currentTime < v.duration - 0.2) {
-          return
-        }
-
+        if (v.duration > 0 && v.currentTime < v.duration - 0.2) return
         playbackHandlers.onEnded()
-
         if (!enableAutoAdvance) return
-
         const swiper = swiperRef.current
-        if (!swiper) return
-
-        if (swiper.isEnd) return
-
+        if (!swiper || swiper.isEnd) return
         swiper.slideNext()
       },
       onError: () => stateRef.current.playbackHandlers.onError(),
@@ -697,7 +707,7 @@ function RiyilsViewerInner({
         return false
       },
     }),
-    [handleTimeUpdate, onStartSpeed, onStopSpeed, onZoneClick]
+    [handleTimeUpdate, onStartSpeed, onStopSpeed, onZoneClick, setIsPipActive]
   )
 
   const activeAriaLabel = useMemo(() => {
@@ -724,7 +734,7 @@ function RiyilsViewerInner({
   )
 
   return (
-    <div ref={containerRef} className="react-riyils-viewer">
+    <div ref={containerRef} className={`react-riyils-viewer ${isPipActive ? 'is-pip-hidden' : ''}`}>
       <div className="react-riyils-viewer__gradient-top" />
       <ProgressBar ref={progressBarRef} color={progressBarColor} onSeek={handleProgressBarSeek} />
       <div className="react-riyils-viewer__close-container">

@@ -177,6 +177,13 @@ The carousel is intended for preview-style usage:
 ---
 
 
+
+### Picture-in-Picture Controls
+
+Picture-in-Picture controls are browser-native and cannot be customized or reduced. React Riyils provides a single, deterministic PiP entry point inside the viewer. This ensures a consistent and predictable PiP experience across browsers, but does not allow for custom PiP button styling or behavior.
+
+---
+
 ### Adding Custom Controls to the Viewer
 
 You can add your own custom control buttons (such as like, share, etc.) to the viewer by passing a `controls` prop to the `RiyilsViewer` component. Each control is an object with properties like `id`, `icon`, `ariaLabel`, `onClick`, and optional `active` or `className`.
