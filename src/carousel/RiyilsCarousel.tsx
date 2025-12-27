@@ -98,9 +98,9 @@ function RiyilsCarouselInner({
                 effect="coverflow"
                 coverflowEffect={{
                     rotate: 0,
-                    stretch: -15,
+                    stretch: 0,
                     depth: 100,
-                    modifier: 2.5,
+                    modifier: 1,
                     slideShadows: true,
                 }}
                 onSwiper={(s) => {
