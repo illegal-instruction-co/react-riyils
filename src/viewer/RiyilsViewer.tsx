@@ -387,7 +387,13 @@ function RiyilsViewerInner({
     return (
         <div ref={containerRef} className={`react-riyils-viewer ${isPipActive ? 'is-pip-hidden' : ''}`}>
             <div className="react-riyils-viewer__gradient-top" />
-            <ProgressBar ref={progressBarRef} color={progressBarColor} onSeek={handleProgressBarSeek} />
+            <ProgressBar
+                ref={progressBarRef}
+                color={progressBarColor}
+                onSeek={handleProgressBarSeek}
+                videoUrl={videos[currentIndex]?.videoUrl}
+                videoId={videos[currentIndex]?.id}
+            />
             <div className="react-riyils-viewer__close-container">
                 <button
                     type="button"
