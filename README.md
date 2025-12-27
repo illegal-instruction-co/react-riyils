@@ -10,7 +10,7 @@
 - [Video object](#video-object)
 - [Adaptive sources](#adaptive-sources-optional)
 - [Notes on autoplay](#notes-on-autoplay)
-- [Carousel vs Viewer](#carousel-vs-viewer)
+- [Carousel vs Explore vs Viewer](#carousel-vs-explore-vs-viewer)
 - [Non-goals](#non-goals)
 - [Mental Model](#mental-model)
 
@@ -43,6 +43,7 @@ It provides:
 
 * Vertical swipe navigation based on Swiper
 * A fullscreen viewer with gesture-based controls
+* An Instagram-style Explore grid with dynamic tile sizes
 * Deterministic video playback handling
 * Adaptive video source loading
 * Careful resource management for multiple videos
@@ -55,6 +56,7 @@ It provides:
 
 * Vertical swipe navigation
 * Tap, double-tap, and long-press gestures
+* Hover-to-play for Explore grid tiles
 * Keyboard controls for desktop environments
 
 ### Playback
@@ -176,6 +178,38 @@ The carousel is intended for preview-style usage:
 
 ---
 
+### Explore (RiyilsExplore)
+
+The `RiyilsExplore` component provides a masonry-style "Explore" grid similar to Instagram. It features mixed tile sizes and smart autoplay logic.
+
+```tsx
+import { RiyilsExplore } from 'react-riyils'
+
+const items = [
+  {
+    id: 'explore-1',
+    videoUrl: '/preview.mp4',
+    videos: [
+      { id: '1', videoUrl: '/full-video-1.mp4' },
+      { id: '2', videoUrl: '/full-video-2.mp4' }
+    ]
+  }
+]
+
+<RiyilsExplore
+  items={items}
+  onItemClick={(item) => console.log(item)}
+/>
+```
+
+Features:
+* **Dynamic Grid:** Automatically applies mixed 1x1, 2x2, and 1x2 (vertical) tile sizes.
+* **Selective Autoplay:** Randomly selects a subset of videos to play on load to maintain performance.
+* **Hover Interaction:** Videos play automatically when hovered on desktop.
+* **Integrated Viewer:** Clicking a tile automatically opens the `RiyilsViewer` with the associated video list.
+
+---
+
 
 
 ### Custom Mini-Player (PiP)
@@ -279,15 +313,21 @@ React Riyils does not try to bypass these rules. Instead, it detects failures, r
 
 --- 
 
-## Carousel vs Viewer
+## Carousel vs Explore vs Viewer
 
-React Riyils exposes two video surfaces:
+React Riyils exposes three primary surfaces:
 
 ### Carousel
-- Preview-oriented
+- Horizontal preview strip
 - Always muted
-- Short-lived playback
-- Optimized for multiple videos on screen
+- Continuous looping
+- Optimized for quick scrolling
+
+### Explore
+- Masonry grid layout
+- Mixed aspect ratios (1x1, 2x2, 1x2)
+- Hybrid autoplay (random subset + hover)
+- Gateway to immersive viewing
 
 ### Viewer
 - Fullscreen, immersive
