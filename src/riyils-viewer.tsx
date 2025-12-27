@@ -70,6 +70,26 @@ export interface RiyilsViewerProps {
   readonly translations?: Partial<RiyilsTranslations>
   readonly progressBarColor?: string
   readonly enableAutoAdvance?: boolean
+  readonly controls?: RiyilsViewerControl[]
+}
+
+export interface RiyilsViewerControlContext {
+  currentIndex: number
+  video: Video
+  isMuted: boolean
+  isPlaying: boolean
+  togglePlay: () => void
+  toggleMute: () => void
+}
+
+export interface RiyilsViewerControl {
+  id: string
+  icon: React.ReactNode
+  ariaLabel: string
+  onClick: (ctx: RiyilsViewerControlContext) => void
+  visible?: boolean | ((ctx: RiyilsViewerControlContext) => boolean)
+  active?: boolean | ((ctx: RiyilsViewerControlContext) => boolean)
+  className?: string
 }
 
 const FEEDBACK_ANIMATION_MS = 250
@@ -432,6 +452,7 @@ function RiyilsViewerInner({
   translations = {},
   progressBarColor = '#fff',
   enableAutoAdvance = false,
+  controls,
 }: RiyilsViewerProps) {
   useLockBodyScroll()
 
@@ -477,6 +498,37 @@ function RiyilsViewerInner({
     onReset: playbackHandlers.onError,
     onRetry: playbackHandlers.onRetry,
   })
+
+  const defaultControls = useMemo<RiyilsViewerControl[]>(() => [
+    {
+      id: 'mute',
+      icon: playbackState.isMuted ? <VolumeX size={24} /> : <Volume2 size={24} />,
+      ariaLabel: playbackState.isMuted ? t.unmute : t.mute,
+      onClick: ({ toggleMute }) => toggleMute(),
+      active: ({ isMuted }) => !isMuted,
+      className: 'react-riyils-viewer__btn-mute',
+    },
+  ], [playbackState.isMuted, t])
+
+  const mergedControls = useMemo<RiyilsViewerControl[]>(() => {
+    if (!controls || controls.length === 0) return defaultControls
+    return [...defaultControls, ...controls]
+  }, [defaultControls, controls])
+
+  const controlCtx = useMemo<RiyilsViewerControlContext>(() => ({
+    currentIndex,
+    video: videos[currentIndex],
+    isMuted: playbackState.isMuted,
+    isPlaying: playbackState.isPlaying,
+    togglePlay: playbackHandlers.togglePlay,
+    toggleMute: playbackHandlers.toggleMute,
+  }), [
+    currentIndex,
+    videos,
+    playbackState.isMuted,
+    playbackState.isPlaying,
+    playbackHandlers,
+  ])
 
   const showPlayPauseOnce = useCallback(() => {
     setShowPlayPauseIcon(true)
@@ -740,17 +792,55 @@ function RiyilsViewerInner({
 
       <div className="react-riyils-viewer__gradient-bottom">
         <div className="react-riyils-viewer__controls-row">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              playbackHandlers.toggleMute()
-            }}
-            className="react-riyils-viewer__btn react-riyils-viewer__btn-mute"
-            aria-label={playbackState.isMuted ? t.unmute : t.mute}
-          >
-            {playbackState.isMuted ? <VolumeX size={24} /> : <Volume2 size={24} />}
-          </button>
+          {mergedControls.map(ctrl => {
+            const visible =
+              typeof ctrl.visible === 'function'
+                ? ctrl.visible({
+                  currentIndex,
+                  video: videos[currentIndex],
+                  isMuted: playbackState.isMuted,
+                  isPlaying: playbackState.isPlaying,
+                  togglePlay: playbackHandlers.togglePlay,
+                  toggleMute: playbackHandlers.toggleMute,
+                })
+                : ctrl.visible !== false
+
+            if (!visible) return null
+
+            const active =
+              typeof ctrl.active === 'function'
+                ? ctrl.active({
+                  currentIndex,
+                  video: videos[currentIndex],
+                  isMuted: playbackState.isMuted,
+                  isPlaying: playbackState.isPlaying,
+                  togglePlay: playbackHandlers.togglePlay,
+                  toggleMute: playbackHandlers.toggleMute,
+                })
+                : !!ctrl.active
+
+            return (
+              <button
+                key={ctrl.id}
+                type="button"
+                className={`react-riyils-viewer__btn ${ctrl.className ?? ''} ${active ? 'active' : ''}`}
+                aria-label={ctrl.ariaLabel}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  ctrl.onClick({
+                    currentIndex,
+                    video: videos[currentIndex],
+                    isMuted: playbackState.isMuted,
+                    isPlaying: playbackState.isPlaying,
+                    togglePlay: playbackHandlers.togglePlay,
+                    toggleMute: playbackHandlers.toggleMute,
+                  })
+                }}
+              >
+                {ctrl.icon}
+              </button>
+            )
+          })}
         </div>
       </div>
     </div>

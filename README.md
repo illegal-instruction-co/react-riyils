@@ -176,19 +176,44 @@ The carousel is intended for preview-style usage:
 
 ---
 
-### Fullscreen viewer
+
+### Adding Custom Controls to the Viewer
+
+You can add your own custom control buttons (such as like, share, etc.) to the viewer by passing a `controls` prop to the `RiyilsViewer` component. Each control is an object with properties like `id`, `icon`, `ariaLabel`, `onClick`, and optional `active` or `className`.
+
+Example:
 
 ```tsx
 import { RiyilsViewer } from 'react-riyils'
+import { useState } from 'react'
+
+const [liked, setLiked] = useState(false)
+
+const viewerControls = [
+  {
+    id: 'like',
+    icon: (
+      <i
+        className={`fa-${liked ? 'solid' : 'regular'} fa-heart`}
+        style={{ fontSize: 20, color: liked ? '#ef4444' : 'white' }}
+      />
+    ),
+    ariaLabel: liked ? 'Unlike' : 'Like',
+    onClick: () => setLiked(v => !v),
+    active: () => liked,
+    className: 'react-riyils-viewer__btn-like',
+  },
+]
 
 <RiyilsViewer
   videos={videos}
   initialIndex={0}
   onClose={() => setOpen(false)}
+  controls={viewerControls}
 />
 ```
 
-The viewer is designed for focused consumption with gesture and keyboard support.
+This allows you to add interactive buttons to the viewer's control panel. You can use any React element as the icon, and manage state as needed.
 
 ---
 

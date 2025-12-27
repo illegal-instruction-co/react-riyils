@@ -555,6 +555,11 @@
         background: rgba(255, 255, 255, 0.94);
       }
     }
+
+    .react-riyils-viewer__btn-like {
+      width: 44px;
+      height: 44px;
+    }
   </style>
 </head>
 
@@ -601,6 +606,7 @@
       const [index, setIndex] = useState(0)
       const [viewer, setViewer] = useState(false)
       const loading = useRef(false)
+      const [liked, setLiked] = useState(false)
 
       useEffect(() => {
         if (loading.current) return
@@ -619,6 +625,28 @@
           }, 700)
         }
       }, [index, videos.length])
+
+      const viewerControls = [
+        {
+          id: 'like',
+          icon: (
+            <i
+              className={`fa-${liked ? 'solid' : 'regular'} fa-heart`}
+              style={{
+                fontSize: 20,
+                color: liked ? '#ef4444' : 'white'
+              }}
+            />
+          ),
+          ariaLabel: liked ? 'Unlike' : 'Like',
+          onClick: () => {
+            setLiked(v => !v)
+            alert(liked ? 'You unliked this video.' : 'You liked this video!')
+          },
+          active: () => liked,
+          className: 'react-riyils-viewer__btn-like'
+        }
+      ]
 
       return (
         <div className="app">
@@ -756,6 +784,7 @@
                     onVideoChange={setIndex}
                     onClose={() => setViewer(false)}
                     enableAutoAdvance
+                    controls={viewerControls}
                   />
                 </div>
               )}
