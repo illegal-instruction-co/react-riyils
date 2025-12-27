@@ -36,20 +36,24 @@ function getMockVideos() {
 
 function getNetworkStatus() {
     if (!navigator.onLine) return "Offline";
+
     const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-    if (conn) {
-        if (conn.effectiveType) {
-            const et = conn.effectiveType;
-            if (et === '4g') return '4G (High Speed)';
-            if (et === '3g') return '3G (Medium)';
-            if (et === '2g') return '2G (Slow)';
-            if (et === 'slow-2g') return 'Slow 2G';
-            return et.toUpperCase();
-        }
-        if (conn.type) {
-            return conn.type.charAt(0).toUpperCase() + conn.type.slice(1);
-        }
+    if (!conn) return 'Connected';
+
+    if (conn.effectiveType) {
+        const labels = {
+            '4g': '4G (High Speed)',
+            '3g': '3G (Medium)',
+            '2g': '2G (Slow)',
+            'slow-2g': 'Slow 2G'
+        };
+        return labels[conn.effectiveType] || conn.effectiveType.toUpperCase();
     }
+
+    if (conn.type) {
+        return conn.type.charAt(0).toUpperCase() + conn.type.slice(1);
+    }
+
     return 'Connected';
 }
 

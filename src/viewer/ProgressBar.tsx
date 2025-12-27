@@ -1,5 +1,6 @@
-import React, { useImperativeHandle, forwardRef, useRef, useCallback, useState } from 'react'
+import React, { useImperativeHandle, forwardRef, useRef, useCallback, useState, useMemo } from 'react'
 import { useVideoSource, type VideoQualityVariants } from '../use-video-source'
+import { throttle } from '../utils'
 
 export interface ProgressBarRef {
     update: (percent: number, force?: boolean) => void
@@ -63,14 +64,18 @@ export const ProgressBar = forwardRef<ProgressBarRef, ProgressBarProps>(({ color
         setHoverPercent(null)
     }, [])
 
+    const throttledSeek = useMemo(() => throttle((val: number) => {
+        if (onSeek) onSeek(val)
+    }, 50), [onSeek])
+
     const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const value = Number.parseFloat(e.target.value)
         const el = inputRef.current
         if (el) {
             el.style.setProperty('--progress-width', `${value}%`)
         }
-        if (onSeek) onSeek(value)
-    }, [onSeek])
+        throttledSeek(value)
+    }, [throttledSeek])
 
     return (
         <fieldset

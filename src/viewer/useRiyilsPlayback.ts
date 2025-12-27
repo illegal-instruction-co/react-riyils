@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePlaybackController } from '../playback/PlaybackControllerContext'
 import { useRiyilsObserver } from '../observe/useRiyilsObserver'
+import { throttle } from '../utils'
 
 const PLAY_VERIFY_MS = 260
 const READY_TIMEOUT_MS = 1200
@@ -214,23 +215,23 @@ export function useRiyilsPlayback(
         }
     }, [currentIndex, getVideoEl])
 
-    const togglePlay = useCallback(() => {
+    const togglePlay = useMemo(() => throttle(() => {
         if (hasError) return
         const id = getActiveId()
         setIsPlaying((p) => {
             if (id) observer[p ? 'pause' : 'play'](id, 'user')
             return !p
         })
-    }, [getActiveId, hasError, observer])
+    }, 200), [getActiveId, hasError, observer])
 
-    const toggleMute = useCallback(() => {
+    const toggleMute = useMemo(() => throttle(() => {
         const id = getActiveId()
         const next = !playbackController.isMuted()
         playbackController.setMuted(next)
         setIsMuted(next)
         if (id) observer.mute(id, next, 'user')
         void applyPlayback()
-    }, [applyPlayback, getActiveId, observer, playbackController])
+    }, 200), [applyPlayback, getActiveId, observer, playbackController])
 
     const seek = useCallback(
         (deltaSeconds: number, method: 'gesture' | 'keyboard') => {

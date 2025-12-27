@@ -29,7 +29,9 @@ import { RiyilsSlide, type SlideUIState } from './RiyilsSlide'
 import 'swiper/css'
 import 'swiper/css/virtual'
 import '../carousel/video-swiper.css'
-import { triggerHaptic } from '../utils'
+import { triggerHaptic as originalTriggerHaptic, throttle } from '../utils'
+
+const triggerHaptic = throttle(originalTriggerHaptic, 100)
 
 export interface Video {
     id: string
@@ -293,22 +295,15 @@ function RiyilsViewerInner({
         [currentIndex, getVideoEl, playbackHandlers]
     )
 
-    const hardStopAllExcept = useCallback((keepIndex: number) => {
-        registry.stopAllExcept(keepIndex)
-    }, [registry])
+    const handleSlideChange = useMemo(() => throttle((s: SwiperType) => {
+        const nextIndex = s.activeIndex
+        setCurrentIndex(nextIndex)
 
-    const handleSlideChange = useCallback(
-        (s: SwiperType) => {
-            const nextIndex = s.activeIndex
-            setCurrentIndex(nextIndex)
+        registry.stopAllExcept(nextIndex)
 
-            registry.stopAllExcept(nextIndex)
-
-            preloadAround(nextIndex)
-            onVideoChange?.(nextIndex)
-        },
-        [getVideoEl, hardStopAllExcept, onVideoChange, preloadAround, registry, playbackState.isMuted]
-    )
+        preloadAround(nextIndex)
+        onVideoChange?.(nextIndex)
+    }, 100), [onVideoChange, preloadAround, registry])
 
     const stateRef = useRef({
         currentIndex,

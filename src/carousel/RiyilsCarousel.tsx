@@ -12,6 +12,7 @@ import { CarouselSlideContainer } from './CarouselSlideContainer'
 import { useCarouselPreload } from './useCarouselPreload'
 import { useCarouselRegistry } from './useCarouselRegistry'
 import { useRiyilsObserver } from '../observe/useRiyilsObserver'
+import { throttle } from '../utils'
 
 import './video-swiper.css'
 import 'swiper/css'
@@ -56,19 +57,16 @@ function RiyilsCarouselInner({
         preloadAround(activeIndex)
     }, [activeIndex, preloadAround])
 
-    const handleSlideChange = useCallback(
-        (swiper: SwiperType) => {
-            const next = swiper.activeIndex
-            if (next === activeIndex) return
+    const handleSlideChange = useMemo(() => throttle((swiper: SwiperType) => {
+        const next = swiper.activeIndex
+        if (next === activeIndex) return
 
-            setActiveIndex(next)
-            onVideoChange(next)
+        setActiveIndex(next)
+        onVideoChange(next)
 
-            const nextVideo = videos[next]
-            if (nextVideo) registry.pauseAllExcept(nextVideo.id)
-        },
-        [activeIndex, onVideoChange, registry, videos]
-    )
+        const nextVideo = videos[next]
+        if (nextVideo) registry.pauseAllExcept(nextVideo.id)
+    }, 100), [onVideoChange, registry, videos])
 
     const handleSlideClick = useCallback(
         (index: number, isActive: boolean) => {

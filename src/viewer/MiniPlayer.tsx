@@ -13,6 +13,7 @@ export function MiniPlayer({ videoEl, onClose, onMaximize }: Readonly<MiniPlayer
 
     const [pos, setPos] = useState({ x: 0, y: 0 })
     const dragStart = useRef<{ x: number; y: number } | null>(null)
+    const currentPos = useRef({ x: 0, y: 0 })
     const initialPos = useRef({ x: 0, y: 0 })
 
     useEffect(() => {
@@ -71,16 +72,19 @@ export function MiniPlayer({ videoEl, onClose, onMaximize }: Readonly<MiniPlayer
         const dx = e.clientX - dragStart.current.x
         const dy = e.clientY - dragStart.current.y
 
-        setPos({
-            x: initialPos.current.x + dx,
-            y: initialPos.current.y + dy
-        })
+        const nx = initialPos.current.x + dx
+        const ny = initialPos.current.y + dy
+
+        rootRef.current.style.transform = `translate3d(${nx}px, ${ny}px, 0)`
+        currentPos.current = { x: nx, y: ny }
     }
 
     const onUp = (e: React.PointerEvent) => {
         dragStart.current = null
         if (rootRef.current) {
             rootRef.current.releasePointerCapture(e.pointerId)
+            rootRef.current.style.transition = ''
+            setPos({ ...currentPos.current })
         }
     }
 
