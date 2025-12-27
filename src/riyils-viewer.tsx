@@ -515,21 +515,6 @@ function RiyilsViewerInner({
     return [...defaultControls, ...controls]
   }, [defaultControls, controls])
 
-  const controlCtx = useMemo<RiyilsViewerControlContext>(() => ({
-    currentIndex,
-    video: videos[currentIndex],
-    isMuted: playbackState.isMuted,
-    isPlaying: playbackState.isPlaying,
-    togglePlay: playbackHandlers.togglePlay,
-    toggleMute: playbackHandlers.toggleMute,
-  }), [
-    currentIndex,
-    videos,
-    playbackState.isMuted,
-    playbackState.isPlaying,
-    playbackHandlers,
-  ])
-
   const showPlayPauseOnce = useCallback(() => {
     setShowPlayPauseIcon(true)
     globalThis.globalThis.window.setTimeout(() => setShowPlayPauseIcon(false), FEEDBACK_ANIMATION_MS)
