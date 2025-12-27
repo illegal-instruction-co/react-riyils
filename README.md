@@ -178,9 +178,14 @@ The carousel is intended for preview-style usage:
 
 
 
-### Picture-in-Picture Controls
+### Custom Mini-Player (PiP)
 
-Picture-in-Picture controls are browser-native and cannot be customized or reduced. React Riyils provides a single, deterministic PiP entry point inside the viewer. This ensures a consistent and predictable PiP experience across browsers, but does not allow for custom PiP button styling or behavior.
+React Riyils replaces the inconsistent browser-native Picture-in-Picture with a fully custom, draggable **MiniPlayer**.
+
+* **Draggable:** Users can drag the player anywhere on the screen.
+* **Smart Positioning:** Respects mobile safe areas (notch/home indicator) automatically.
+* **Seamless Transition:** Zero-interruption switching between Fullscreen and Mini-Player.
+* **Consistent UI:** Same experience on iOS, Android, and Desktop.
 
 ---
 
@@ -340,7 +345,7 @@ Hooks are grouped by responsibility:
 - PlaybackController
 
 ### Platform Guards
-- useIosSafariGuard
+- usePageLifecycleGuard (Universal background/tab-switching protection)
 - useIosAutoplayUnlock
 
 Most users do not need to interact with these directly.

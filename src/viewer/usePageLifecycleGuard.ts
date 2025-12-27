@@ -8,7 +8,7 @@ interface IosSafariGuardOptions {
     onRetry: () => void
 }
 
-export function useIosSafariGuard({
+export function usePageLifecycleGuard({
     getActiveId,
     onReset,
     onRetry,
@@ -36,8 +36,6 @@ export function useIosSafariGuard({
     }, [onRetry])
 
     useEffect(() => {
-        if (!isIosSafari()) return
-
         const handleReset = () => {
             if (!mountedRef.current) return
             if (getActiveId()) onReset()

@@ -7,12 +7,13 @@ const READY_TIMEOUT_MS = 1200
 
 function waitForReady(video: HTMLVideoElement): Promise<boolean> {
     if (!video.src) return Promise.resolve(false)
-    if (video.readyState >= 3) return Promise.resolve(true)
+    if (video.readyState >= 1) return Promise.resolve(true)
 
     return new Promise((resolve) => {
         let done = false
 
         const cleanup = () => {
+            video.removeEventListener('loadedmetadata', onReady)
             video.removeEventListener('canplay', onReady)
             video.removeEventListener('loadeddata', onReady)
             video.removeEventListener('error', onError)
@@ -25,14 +26,15 @@ function waitForReady(video: HTMLVideoElement): Promise<boolean> {
             resolve(ok)
         }
 
-        const onReady = () => finish(video.readyState >= 3)
+        const onReady = () => finish(video.readyState >= 1)
         const onError = () => finish(false)
 
+        video.addEventListener('loadedmetadata', onReady, { once: true })
         video.addEventListener('canplay', onReady, { once: true })
         video.addEventListener('loadeddata', onReady, { once: true })
         video.addEventListener('error', onError, { once: true })
 
-        setTimeout(() => finish(video.readyState >= 3), READY_TIMEOUT_MS)
+        setTimeout(() => finish(video.readyState >= 1), READY_TIMEOUT_MS)
     })
 }
 

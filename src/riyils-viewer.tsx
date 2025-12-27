@@ -29,7 +29,7 @@ import { useRiyilsGestures, type GestureIntent, type GestureZone } from './viewe
 import { useRiyilsKeyboard } from './viewer/useRiyilsKeyboard'
 import { useRiyilsPlayback } from './viewer/useRiyilsPlayback'
 import { useRiyilsPreload } from './viewer/useRiyilsPreload'
-import { useIosSafariGuard } from './viewer/useIosSafariGuard'
+import { usePageLifecycleGuard } from './viewer/usePageLifecycleGuard'
 import { useIosAutoplayUnlock } from './viewer/useIosAutoplayUnlock'
 import { useRiyilsObserver } from './observe/useRiyilsObserver'
 
@@ -523,7 +523,7 @@ function RiyilsViewerInner({
     observer
   )
 
-  useIosSafariGuard({
+  usePageLifecycleGuard({
     getActiveId,
     onReset: playbackHandlers.onError,
     onRetry: playbackHandlers.onRetry,
