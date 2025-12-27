@@ -72,7 +72,6 @@ export function useRiyilsPlayback(
         const video = getVideoEl(currentIndex)
         const id = getActiveId()
         if (!video || !id || hasError) return
-
         if (id !== activeIdRef.current) return
 
         if (video.readyState === 0) {
@@ -81,8 +80,7 @@ export function useRiyilsPlayback(
             return
         }
 
-        const token = playTokenRef.current + 1
-        playTokenRef.current = token
+        const token = ++playTokenRef.current
 
         if (!isPlaying) {
             playbackController.reset('viewer', id)
@@ -160,7 +158,6 @@ export function useRiyilsPlayback(
 
         const markLoading = () => {
             if (waitingTimeoutRef.current != null) return
-
             waitingTimeoutRef.current = globalThis.window.setTimeout(() => {
                 if (mountedRef.current && token === activeTokenRef.current) {
                     setHasStarted(false)
@@ -235,12 +232,9 @@ export function useRiyilsPlayback(
         if (!mountedRef.current) return
         const id = getActiveId()
         if (!id) return
-
         setHasError(true)
         setIsPlaying(false)
-
         observer.error(id, 'decode')
-
         requestAnimationFrame(() => {
             playbackController.reset('viewer', id)
         })
@@ -259,7 +253,6 @@ export function useRiyilsPlayback(
         setHasError(false)
         setIsPlaying(true)
         setRetryCount((c) => c + 1)
-
         observer.retry(id)
 
         requestAnimationFrame(() => {
@@ -276,7 +269,7 @@ export function useRiyilsPlayback(
             retryingRef.current = false
             void applyPlayback()
         })
-    }, [applyPlayback, currentIndex, getActiveId, getVideoEl, observer, playbackController])
+    }, [applyPlayback, currentIndex, getActiveId, getVideoEl, observer])
 
     const playbackState = useMemo(
         () => ({

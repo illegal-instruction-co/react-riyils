@@ -17,10 +17,10 @@ export const ProgressBar = forwardRef<ProgressBarRef, ProgressBarProps>(({ color
             const el = inputRef.current
             if (!el) return
 
-            if (force || document.activeElement !== el) {
-                el.value = percent.toString()
-                el.style.setProperty('--progress-width', `${percent}%`)
-            }
+
+            el.value = percent.toString()
+            el.style.setProperty('--progress-width', `${percent}%`)
+
         },
     }))
 

@@ -274,12 +274,8 @@ function VideoEl({
 
   useEffect(() => {
     const v = videoRef.current
-    if (!v) return
-    if (!active) {
-      v.pause()
-      v.muted = true
-      v.volume = 0
-    }
+    if (!v || active) return
+    v.pause()
   }, [active])
 
   useEffect(() => {
@@ -480,60 +476,32 @@ function RiyilsViewerInner({
   const handleProgressBarSeek = useCallback(
     (percent: number) => {
       const v = getVideoEl(currentIndex)
-      const id = getActiveId()
-      if (!v || !id || Number.isNaN(v.duration) || v.duration === Infinity) return
+      if (!v || !Number.isFinite(v.duration)) return
 
-      const newTime = (percent / 100) * v.duration
-      v.currentTime = newTime
+      const targetTime = (percent / 100) * v.duration
+      const delta = targetTime - v.currentTime
 
-      progressBarRef.current?.update(percent, true)
-
-      if (!playbackState.hasError) {
-        v.play().catch(() => { })
-        if (!playbackState.isPlaying) {
-          playbackHandlers.togglePlay()
-        }
-      }
-
-      observer.seek(id, 0, 'gesture')
+      playbackHandlers.seek(delta, 'gesture')
     },
-    [currentIndex, getActiveId, getVideoEl, observer, playbackState.hasError, playbackState.isPlaying, playbackHandlers]
+    [currentIndex, getVideoEl, playbackHandlers]
   )
 
-  const hardStopAllExcept = useCallback((keepIndex: number) => {
-    const root = containerRef.current
-    if (!root) return
-    const els = root.querySelectorAll('video')
-    els.forEach((el) => {
-      const v = el
-      const idx = Number(v.dataset.riyilsIndex)
-      if (!Number.isNaN(idx) && idx === keepIndex) return
-      try {
-        v.pause()
-        v.muted = true
-        v.volume = 0
-      } catch { }
-    })
-  }, [])
+  const hardStopAllExcept = useCallback(
+    (keepIndex: number) => {
+      registry.stopAllExcept(keepIndex)
+    },
+    [registry]
+  )
 
   const handleSlideChange = useCallback(
     (s: SwiperType) => {
       const nextIndex = s.activeIndex
       setCurrentIndex(nextIndex)
 
-      hardStopAllExcept(nextIndex)
       registry.stopAllExcept(nextIndex)
 
       preloadAround(nextIndex)
       onVideoChange?.(nextIndex)
-
-      const nextVideo = getVideoEl(nextIndex)
-      if (nextVideo) {
-        nextVideo.pause()
-        nextVideo.currentTime = 0
-        nextVideo.muted = playbackState.isMuted
-        nextVideo.volume = playbackState.isMuted ? 0 : 1
-      }
     },
     [getVideoEl, hardStopAllExcept, onVideoChange, preloadAround, registry, playbackState.isMuted]
   )
@@ -574,8 +542,7 @@ function RiyilsViewerInner({
         const v = registry.get(currentIndex)
         if (!swiper || !v) return
         if (swiper.isEnd) {
-          v.currentTime = 0
-          void v.play().catch(() => undefined)
+          playbackHandlers.onEnded()
           return
         }
         swiper.slideNext()

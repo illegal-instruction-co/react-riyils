@@ -343,9 +343,6 @@ export function useVideoSource(
 ): string | undefined {
     const finalUrl = useMemo(() => resolveFinalUrl(src), [src])
     const key = useMemo(() => {
-        if (scope === 'viewer') {
-            return `${scope}:${id}:${Math.random().toString(36).slice(2)}`
-        }
         return buildKey(scope, id)
     }, [scope, id])
 
