@@ -300,7 +300,6 @@ function VideoEl({
     const onEnded = handlers.onEnded
     const onError = handlers.onError
 
-    // Fix: Create a native event handler for contextmenu
     const onCtx = (e: Event) => {
       e.preventDefault()
       e.stopPropagation()
@@ -474,8 +473,17 @@ function RiyilsViewerInner({
     const newTime = (percent / 100) * v.duration
     v.currentTime = newTime
 
+    progressBarRef.current?.update(percent, true)
+
+    if (!playbackState.hasError) {
+      v.play().catch(() => { })
+      if (!playbackState.isPlaying) {
+        playbackHandlers.togglePlay()
+      }
+    }
+
     observer.seek(id, 0, 'gesture')
-  }, [currentIndex, getActiveId, getVideoEl, observer])
+  }, [currentIndex, getActiveId, getVideoEl, observer, playbackState, playbackHandlers])
 
   const handleSlideChange = useCallback(
     (s: SwiperType) => {

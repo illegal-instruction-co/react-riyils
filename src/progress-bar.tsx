@@ -1,7 +1,7 @@
 import React, { useImperativeHandle, forwardRef, useRef, useCallback } from 'react'
 
 export interface ProgressBarRef {
-    update: (percent: number) => void
+    update: (percent: number, force?: boolean) => void
 }
 
 interface ProgressBarProps {
@@ -13,11 +13,11 @@ export const ProgressBar = forwardRef<ProgressBarRef, ProgressBarProps>(({ color
     const inputRef = useRef<HTMLInputElement>(null)
 
     useImperativeHandle(ref, () => ({
-        update: (percent: number) => {
+        update: (percent: number, force = false) => {
             const el = inputRef.current
             if (!el) return
 
-            if (document.activeElement !== el) {
+            if (force || document.activeElement !== el) {
                 el.value = percent.toString()
                 el.style.setProperty('--progress-width', `${percent}%`)
             }
