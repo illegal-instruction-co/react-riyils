@@ -1,6 +1,6 @@
 :root {
-  --rr-slide-w-mob: 220px;
-  --rr-slide-h-mob: 400px;
+  --rr-slide-w-mob: 70vw;
+  --rr-slide-h-mob: 60vh;
   --rr-slide-w-desk: 300px;
   --rr-slide-h-desk: 540px;
   --rr-primary: #3b82f6;

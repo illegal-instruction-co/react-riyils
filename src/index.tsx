@@ -38,8 +38,6 @@ export interface ReactRiyilsProps {
   readonly onVideoClick: (index: number) => void
   readonly onVideoChange: (index: number) => void
   readonly translations?: Partial<ReactRiyilsTranslations>
-  readonly containerHeightMobile?: number
-  readonly containerHeightDesktop?: number
   readonly enableAutoAdvance?: boolean
 }
 
@@ -113,8 +111,6 @@ function ReactRiyilsInner({
   onVideoClick,
   onVideoChange,
   translations = {},
-  containerHeightMobile,
-  containerHeightDesktop,
   enableAutoAdvance = true,
 }: Readonly<ReactRiyilsProps>) {
 
@@ -127,17 +123,6 @@ function ReactRiyilsInner({
   const preloadAround = useCarouselPreload(videos)
 
   const t = useMemo(() => ({ ...defaultReactRiyilsTranslations, ...translations }), [translations])
-
-  const containerStyle = useMemo(
-    () =>
-    ((
-      {
-        '--container-height-mobile': containerHeightMobile ? `${containerHeightMobile}px` : undefined,
-        '--container-height-desktop': containerHeightDesktop ? `${containerHeightDesktop}px` : undefined,
-      } as unknown
-    ) as React.CSSProperties),
-    [containerHeightMobile, containerHeightDesktop]
-  )
 
   useEffect(() => {
     if (activeIndex !== currentIndex) {
@@ -185,7 +170,7 @@ function ReactRiyilsInner({
   }, [enableAutoAdvance])
 
   return (
-    <section className="react-riyils__container" style={containerStyle} aria-label={t.carouselAriaLabel}>
+    <section className="react-riyils__container" aria-label={t.carouselAriaLabel}>
       <Swiper
         modules={[Keyboard, Mousewheel, EffectCoverflow, Virtual]}
         observer
