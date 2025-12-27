@@ -571,7 +571,7 @@
   <script type="text/babel">
     const { useState, useEffect, useRef } = React
     const { createRoot } = ReactDOM
-    const { ReactRiyils, RiyilsViewer } = window.ReactRiyils || {}
+    const { ReactRiyils, RiyilsViewer, PlaybackControllerProvider } = window.ReactRiyils || {}
 
     const TEXT = {
       brand: 'React Riyils',
@@ -695,7 +695,7 @@
               </div>
             </section>
 
-            <section className="container stage" aria-label="Demo">
+            <PlaybackControllerProvider className="container stage" aria-label="Demo">
               <div className="stageGlow" aria-hidden="true"></div>
               <div className="viewerWrap">
                 <div className="hud" aria-hidden="true">
@@ -746,23 +746,23 @@
                   </div>
                 ))}
               </div>
-            </section>
+
+              {viewer && (
+                <div className="viewerOverlay" role="dialog" aria-modal="true">
+                  <RiyilsViewer
+                    key={`viewer-${videos[index].id}`}
+                    videos={videos}
+                    initialIndex={index}
+                    onVideoChange={setIndex}
+                    onClose={() => setViewer(false)}
+                    enableAutoAdvance
+                  />
+                </div>
+              )}
+            </PlaybackControllerProvider>
           </main>
 
           <footer className="footer">MIT Licensed · React 18 · Swiper 11 · Built in public</footer>
-
-          {viewer && (
-            <div className="viewerOverlay" role="dialog" aria-modal="true">
-              <RiyilsViewer
-                key={`viewer-${videos[index].id}`}
-                videos={videos}
-                initialIndex={index}
-                onVideoChange={setIndex}
-                onClose={() => setViewer(false)}
-                enableAutoAdvance
-              />
-            </div>
-          )}
         </div>
       )
     }

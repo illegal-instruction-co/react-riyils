@@ -47,12 +47,12 @@ export function useRiyilsPlayback(
 ) {
     const playbackController = usePlaybackController()
 
-    const [isMuted, setIsMuted] = useState(true)
     const [isSpeedUp, setIsSpeedUp] = useState(false)
     const [isPlaying, setIsPlaying] = useState(true)
     const [hasError, setHasError] = useState(false)
     const [hasStarted, setHasStarted] = useState(false)
     const [retryCount, setRetryCount] = useState(0)
+    const [isMuted, setIsMuted] = useState(() => playbackController.isMuted())
 
     const playTokenRef = useRef(0)
     const retryingRef = useRef(false)
@@ -67,6 +67,10 @@ export function useRiyilsPlayback(
             mountedRef.current = false
         }
     }, [])
+
+    useEffect(() => {
+        setIsMuted(playbackController.isMuted())
+    }, [currentIndex, playbackController])
 
     const applyPlayback = useCallback(async () => {
         const video = getVideoEl(currentIndex)
@@ -97,7 +101,7 @@ export function useRiyilsPlayback(
             id,
             video,
             options: {
-                muted: isMuted,
+                muted: playbackController.isMuted(),
                 playbackRate: isSpeedUp ? 2 : 1,
                 allowAutoMute: true,
                 verifyMs: PLAY_VERIFY_MS,
@@ -108,15 +112,10 @@ export function useRiyilsPlayback(
 
         if (result === 'playing') {
             observer.play(id, 'auto')
-            if (video.muted !== isMuted) {
-                setIsMuted(video.muted)
-                observer.mute(id, video.muted, 'autoplay')
-            }
             return
         }
 
         if (result === 'blocked') {
-            setIsMuted(true)
             observer.mute(id, true, 'autoplay')
         }
 
@@ -126,7 +125,6 @@ export function useRiyilsPlayback(
         getActiveId,
         getVideoEl,
         hasError,
-        isMuted,
         isPlaying,
         isSpeedUp,
         playbackController,
@@ -200,11 +198,12 @@ export function useRiyilsPlayback(
 
     const toggleMute = useCallback(() => {
         const id = getActiveId()
-        setIsMuted((m) => {
-            if (id) observer.mute(id, !m, 'user')
-            return !m
-        })
-    }, [getActiveId, observer])
+        const next = !playbackController.isMuted()
+        playbackController.setMuted(next)
+        setIsMuted(next)
+        if (id) observer.mute(id, next, 'user')
+        void applyPlayback()
+    }, [applyPlayback, getActiveId, observer, playbackController])
 
     const seek = useCallback(
         (deltaSeconds: number, method: 'gesture' | 'keyboard') => {
@@ -281,7 +280,7 @@ export function useRiyilsPlayback(
             enableAutoAdvance,
             retryCount,
         }),
-        [enableAutoAdvance, hasError, hasStarted, isMuted, isPlaying, isSpeedUp, retryCount]
+        [isMuted, isSpeedUp, isPlaying, hasError, hasStarted, enableAutoAdvance, retryCount]
     )
 
     const playbackHandlers = useMemo(

@@ -11,7 +11,6 @@ import { CarouselSlide } from './carousel/CarouselSlide'
 import { useCarouselPlayback } from './carousel/useCarouselPlayback'
 import { useCarouselPreload } from './carousel/useCarouselPreload'
 import { useCarouselRegistry } from './carousel/useCarouselRegistry'
-import { PlaybackControllerProvider } from './playback/PlaybackControllerContext'
 import { useRiyilsObserver } from './observe/useRiyilsObserver'
 
 import './video-swiper.css'
@@ -240,9 +239,7 @@ function ReactRiyilsInner({
 
 export function ReactRiyils(props: Readonly<ReactRiyilsProps>) {
   return (
-    <PlaybackControllerProvider>
-      <ReactRiyilsInner {...props} />
-    </PlaybackControllerProvider>
+    <ReactRiyilsInner {...props} />
   )
 }
 
@@ -281,3 +278,5 @@ export {
   type RiyilsTranslations,
   type RiyilsViewerProps,
 } from './riyils-viewer'
+
+export { PlaybackControllerProvider } from './playback/PlaybackControllerContext';

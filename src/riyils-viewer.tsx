@@ -26,7 +26,6 @@ import { useRiyilsPlayback } from './viewer/useRiyilsPlayback'
 import { useRiyilsPreload } from './viewer/useRiyilsPreload'
 import { useIosSafariGuard } from './viewer/useIosSafariGuard'
 import { useIosAutoplayUnlock } from './viewer/useIosAutoplayUnlock'
-import { PlaybackControllerProvider } from './playback/PlaybackControllerContext'
 import { useRiyilsObserver } from './observe/useRiyilsObserver'
 
 import 'swiper/css'
@@ -685,10 +684,7 @@ function RiyilsViewerInner({
   )
 }
 
+
 export function RiyilsViewer(props: RiyilsViewerProps) {
-  return (
-    <PlaybackControllerProvider>
-      <RiyilsViewerInner {...props} />
-    </PlaybackControllerProvider>
-  )
+  return <RiyilsViewerInner {...props} />
 }

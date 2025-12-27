@@ -23,6 +23,15 @@ function buildKey(scope: PlaybackScope, id: string): string {
 export class PlaybackController {
   private readonly sessions = new Map<string, PlaybackSession>()
   private globalToken = 0
+  private muted = true
+
+  isMuted(): boolean {
+    return this.muted
+  }
+
+  setMuted(value: boolean): void {
+    this.muted = value
+  }
 
   private nextToken(): number {
     this.globalToken += 1
@@ -59,7 +68,10 @@ export class PlaybackController {
 
     this.sessions.set(key, { token, video: req.video })
 
-    const result = await playDeterministic(req.video, req.options)
+    const result = await playDeterministic(req.video, {
+      ...req.options,
+      muted: this.muted,
+    })
 
     const current = this.sessions.get(key)
 
@@ -69,7 +81,14 @@ export class PlaybackController {
     }
 
     if (result === 'playing') {
+      if (req.scope === 'viewer') {
+        this.muted = req.video.muted
+      }
       return 'playing'
+    }
+
+    if (result === 'blocked') {
+      this.muted = true
     }
 
     this.cancelSession(key)
