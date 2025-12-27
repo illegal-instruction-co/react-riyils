@@ -4,6 +4,7 @@ import { Keyboard, Mousewheel, EffectCoverflow, Virtual } from 'swiper/modules'
 import type { Swiper as SwiperType } from 'swiper'
 
 import { useVideoSource } from './use-video-source'
+import { useSharedVideo } from './use-shared-video'
 import type { Video } from './riyils-viewer'
 
 import { CarouselSlide } from './carousel/CarouselSlide'
@@ -66,15 +67,13 @@ const CarouselSlideContainer = React.memo(function CarouselSlideContainer({
   observer: ReturnType<typeof useRiyilsObserver>
   onSlideClick: (index: number, isActive: boolean) => void
 }>) {
-  const videoRef = useRef<HTMLVideoElement | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
-  const setVideoRef = useCallback(
-    (el: HTMLVideoElement | null) => {
-      registry.register(video.id)(el)
-      videoRef.current = el
-    },
-    [registry, video.id]
-  )
+  const videoRef = useSharedVideo(containerRef, video.id, 'react-riyils__video', shouldLoad)
+
+  useEffect(() => {
+    registry.register(video.id)(videoRef.current)
+  }, [registry, video.id, videoRef.current])
 
   useVideoSource(videoRef, 'carousel', video.id, video.videoUrl, shouldLoad)
 
@@ -87,21 +86,28 @@ const CarouselSlideContainer = React.memo(function CarouselSlideContainer({
     observer
   )
 
+  useEffect(() => {
+    const v = videoRef.current
+    if (!v) return
+    const errorHandler = () => playback.onError()
+    v.addEventListener('error', errorHandler)
+    return () => v.removeEventListener('error', errorHandler)
+  }, [videoRef.current, playback.onError])
+
   const handleClick = useCallback(() => onSlideClick(index, isActive), [index, isActive, onSlideClick])
 
   return (
     <CarouselSlide
-      registerRef={setVideoRef}
       active={isActive}
-      shouldLoad={shouldLoad}
       hasError={playback.hasError}
       t={t}
       videoId={video.id}
       observer={observer}
       onClick={handleClick}
       onRetry={playback.retry}
-      onError={playback.onError}
-    />
+    >
+      <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
+    </CarouselSlide>
   )
 })
 

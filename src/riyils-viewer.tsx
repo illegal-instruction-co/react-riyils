@@ -18,6 +18,7 @@ import {
   Zap,
 } from 'lucide-react'
 import { useVideoSource, type VideoQualityVariants } from './use-video-source'
+import { useSharedVideo } from './use-shared-video'
 import { ProgressBar, type ProgressBarRef } from './progress-bar'
 import { useVideoRegistry } from './viewer/useVideoRegistry'
 import { useRiyilsGestures, type GestureIntent, type GestureZone } from './viewer/useRiyilsGestures'
@@ -273,19 +274,50 @@ function VideoEl({
   activeAriaLabel?: string
   handlers: SlideHandlers
 }>) {
-  const videoRef = useRef<HTMLVideoElement | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  const className = `react-riyils-viewer__video ${active ? 'active' : 'react-riyils-viewer__video-buffer'}`
+
+  const videoRef = useSharedVideo(containerRef, video.id, className, shouldLoad)
 
   useVideoSource(videoRef, 'viewer', video.id, video.videoUrl, shouldLoad)
+
+  useEffect(() => {
+    if (videoRef.current) {
+      handlers.registerVideo(index)(videoRef.current)
+    }
+  }, [handlers, index, videoRef.current])
 
   useEffect(() => {
     const v = videoRef.current
     if (!v || !active) return
 
-    v.addEventListener('timeupdate', handlers.onTimeUpdate)
-    return () => {
-      v.removeEventListener('timeupdate', handlers.onTimeUpdate)
+    v.loop = !playback.enableAutoAdvance
+    v.muted = playback.isMuted
+    if (video.thumbnailUrl) v.poster = video.thumbnailUrl
+
+    const onTimeUpdate = handlers.onTimeUpdate
+    const onEnded = handlers.onEnded
+    const onError = handlers.onError
+
+    // Fix: Create a native event handler for contextmenu
+    const onCtx = (e: Event) => {
+      e.preventDefault()
+      e.stopPropagation()
     }
-  }, [active, handlers.onTimeUpdate])
+
+    v.addEventListener('timeupdate', onTimeUpdate)
+    v.addEventListener('ended', onEnded)
+    v.addEventListener('error', onError)
+    v.addEventListener('contextmenu', onCtx)
+
+    return () => {
+      v.removeEventListener('timeupdate', onTimeUpdate)
+      v.removeEventListener('ended', onEnded)
+      v.removeEventListener('error', onError)
+      v.removeEventListener('contextmenu', onCtx)
+    }
+  }, [active, handlers, playback.enableAutoAdvance, playback.isMuted, video.thumbnailUrl, videoRef.current])
 
   const showLoading =
     active &&
@@ -294,29 +326,12 @@ function VideoEl({
 
   return (
     <div className="react-riyils-viewer__video-wrapper">
-      <video
-        ref={(el) => {
-          handlers.registerVideo(index)(el)
-          videoRef.current = el
-        }}
-        className={`react-riyils-viewer__video ${active ? 'active' : 'react-riyils-viewer__video-buffer'}`}
-        playsInline
-        loop={!playback.enableAutoAdvance}
-        muted={playback.isMuted}
-        autoPlay={active}
-        poster={video.thumbnailUrl}
-        onEnded={active ? handlers.onEnded : undefined}
-        onError={active ? handlers.onError : undefined}
-        onContextMenu={active ? handlers.onContextMenu : undefined}
-        disablePictureInPicture
-        disableRemotePlayback
+      <div
+        ref={containerRef}
+        style={{ width: '100%', height: '100%' }}
         aria-label={active ? activeAriaLabel : undefined}
         aria-hidden={!active}
-        tabIndex={-1}
-      >
-        <track kind="captions" src={video.captionUrl || ''} label="English" />
-      </video>
-
+      />
       {showLoading && (
         <div className="react-riyils-viewer__loading">
           <div className="react-riyils-viewer__spinner" />

@@ -6,29 +6,25 @@ import { useRiyilsObserver } from '../observe/useRiyilsObserver'
 type Observer = ReturnType<typeof useRiyilsObserver>
 
 interface CarouselSlideProps {
-    registerRef: (el: HTMLVideoElement | null) => void
     active: boolean
-    shouldLoad: boolean
     hasError: boolean
     t: ReactRiyilsTranslations
     onClick: () => void
     onRetry: () => void
-    onError: () => void
     observer: Observer
     videoId: string
+    children: React.ReactNode
 }
 
 export const CarouselSlide = memo(function CarouselSlide({
-    registerRef,
     active,
-    shouldLoad,
     hasError,
     t,
     onClick,
     onRetry,
-    onError,
     observer,
     videoId,
+    children,
 }: Readonly<CarouselSlideProps>) {
     const disabled = active && hasError
 
@@ -61,18 +57,7 @@ export const CarouselSlide = memo(function CarouselSlide({
                         </button>
                     </div>
                 ) : (
-                    <video
-                        ref={registerRef}
-                        muted
-                        playsInline
-                        preload={shouldLoad ? 'auto' : 'none'}
-                        className="react-riyils__video"
-                        onError={() => {
-                            if (!shouldLoad || !active) return
-                            observer.error(videoId, 'decode')
-                            onError()
-                        }}
-                    />
+                    children
                 )}
 
                 {active && !hasError && (
