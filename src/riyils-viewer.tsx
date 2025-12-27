@@ -73,10 +73,16 @@ export interface RiyilsViewerProps {
   readonly enableAutoAdvance?: boolean
 }
 
-const FEEDBACK_ANIMATION_MS = 600
+const FEEDBACK_ANIMATION_MS = 400
 const SCROLL_HINT_MS = 1000
 
 type SeekFeedback = 'forward' | 'rewind' | null
+
+function triggerHaptic() {
+  if (typeof navigator !== 'undefined' && navigator.vibrate) {
+    navigator.vibrate(10)
+  }
+}
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max)
@@ -107,6 +113,7 @@ export type PlaybackState = {
   hasError: boolean
   hasStarted: boolean
   enableAutoAdvance: boolean
+  retryCount: number
 }
 
 type SlideUIState = {
@@ -236,6 +243,7 @@ const RiyilsSlide = React.memo(function RiyilsSlide({
       )}
 
       <VideoEl
+        key={`${video.id}-${index}-${playback.retryCount}`}
         video={video}
         index={index}
         active={active}
@@ -380,6 +388,7 @@ function RiyilsViewerInner({
 
   const togglePlay = useCallback(() => {
     if (playbackState.hasError) return
+    triggerHaptic()
     playbackHandlers.togglePlay()
     showPlayPauseOnce()
   }, [playbackHandlers, playbackState.hasError, showPlayPauseOnce])
@@ -387,6 +396,7 @@ function RiyilsViewerInner({
   const handleGestureIntent = useCallback(
     (intent: GestureIntent) => {
       if (intent.type === 'seek') {
+        triggerHaptic()
         playbackHandlers.seek(intent.delta, 'gesture')
         setSeekFeedback(intent.delta > 0 ? 'forward' : 'rewind')
         globalThis.globalThis.window.setTimeout(() => setSeekFeedback(null), FEEDBACK_ANIMATION_MS)
@@ -397,6 +407,7 @@ function RiyilsViewerInner({
         return
       }
       if (intent.type === 'speed-start') {
+        triggerHaptic()
         if (!playbackState.hasError) playbackHandlers.setSpeedUp(true)
         return
       }
@@ -441,15 +452,15 @@ function RiyilsViewerInner({
   }, [])
 
   const handleProgressBarSeek = useCallback((percent: number) => {
-    const v = getVideoEl(currentIndex);
-    const id = getActiveId();
-    if (!v || !id || Number.isNaN(v.duration) || v.duration === Infinity) return;
+    const v = getVideoEl(currentIndex)
+    const id = getActiveId()
+    if (!v || !id || Number.isNaN(v.duration) || v.duration === Infinity) return
 
-    const newTime = (percent / 100) * v.duration;
-    v.currentTime = newTime;
+    const newTime = (percent / 100) * v.duration
+    v.currentTime = newTime
 
-    observer.seek(id, 0, 'gesture');
-  }, [currentIndex, getActiveId, getVideoEl, observer]);
+    observer.seek(id, 0, 'gesture')
+  }, [currentIndex, getActiveId, getVideoEl, observer])
 
   const handleSlideChange = useCallback(
     (s: SwiperType) => {

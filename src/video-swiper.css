@@ -12,6 +12,7 @@
   --rr-glass-border: rgba(255, 255, 255, 0.1);
   --rr-text: #ffffff;
   --rr-bezier: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --rr-whisper-bezier: cubic-bezier(0.2, 0, 0, 1);
   --rr-safe-bot: env(safe-area-inset-bottom, 20px);
   --rr-safe-top: env(safe-area-inset-top, 16px);
   --z-base: 1;
@@ -456,61 +457,6 @@
   background: rgba(255, 255, 255, 0.04);
 }
 
-@keyframes rr-fade-zoom-in {
-  0% {
-    opacity: 0;
-    transform: scale(0.5);
-  }
-
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes rr-fade-zoom-out {
-  0% {
-    opacity: 1;
-    transform: scale(1);
-  }
-
-  100% {
-    opacity: 0;
-    transform: scale(1.5);
-  }
-}
-
-@keyframes rr-spin {
-  0% {
-    transform: rotate(0deg);
-  }
-
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes rr-bounce {
-
-  0%,
-  100% {
-    transform: translate3d(-50%, 0, 0);
-  }
-
-  50% {
-    transform: translate3d(-50%, -10px, 0);
-  }
-}
-
-.react-riyils-viewer__loader {
-  width: 32px;
-  height: 32px;
-  border: 3px solid rgba(255, 255, 255, 0.2);
-  border-top-color: var(--rr-text);
-  border-radius: 50%;
-  animation: rr-spin 1s linear infinite;
-}
-
 .react-riyils-viewer__feedback-center {
   position: absolute;
   inset: 0;
@@ -522,23 +468,24 @@
 }
 
 .react-riyils-viewer__feedback-icon {
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  padding: 20px;
-  border-radius: 50%;
-  color: var(--rr-text);
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  padding: 0;
+  border-radius: 0;
+  color: rgba(255, 255, 255, 0.9);
   display: flex;
   align-items: center;
   justify-content: center;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 }
 
 .react-riyils-viewer__feedback-icon.animate-in {
-  animation: rr-fade-zoom-in 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  animation: rr-ghost-flash 0.4s var(--rr-whisper-bezier) forwards;
 }
 
 .react-riyils-viewer__feedback-icon.animate-out {
-  animation: rr-fade-zoom-out 0.5s ease forwards;
+  animation: rr-ghost-flash 0.4s var(--rr-whisper-bezier) forwards;
 }
 
 .react-riyils-viewer__feedback-speed {
@@ -588,24 +535,30 @@
 }
 
 .react-riyils-viewer__seek-circle {
-  width: 80px;
-  height: 80px;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border-radius: 50%;
+  width: auto;
+  height: auto;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-radius: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: var(--rr-text);
-  animation: rr-fade-zoom-in 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  color: rgba(255, 255, 255, 0.8);
+  animation: rr-seek-ripple 0.4s var(--rr-whisper-bezier) forwards;
+}
+
+.react-riyils-viewer__feedback-seek.left .react-riyils-viewer__seek-circle {
+  --seek-dir: -20px;
+}
+
+.react-riyils-viewer__feedback-seek.right .react-riyils-viewer__seek-circle {
+  --seek-dir: 20px;
 }
 
 .react-riyils-viewer__seek-text {
-  font-size: 11px;
-  font-weight: 700;
-  margin-top: 44px;
+  display: none;
 }
 
 .react-riyils-viewer__error-overlay {
@@ -667,6 +620,15 @@
   animation: rr-spin 0.8s linear infinite;
 }
 
+.react-riyils-viewer__loader {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-top-color: var(--rr-text);
+  border-radius: 50%;
+  animation: rr-spin 1s linear infinite;
+}
+
 .react-riyils-viewer__loading {
   position: absolute;
   inset: 0;
@@ -703,4 +665,84 @@
 .react-riyils-viewer__scroll-hint--hidden {
   opacity: 0;
   animation: none;
+}
+
+@keyframes rr-ghost-flash {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+
+  20% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.3);
+  }
+}
+
+@keyframes rr-seek-ripple {
+  0% {
+    opacity: 0;
+    transform: translateX(0) scale(0.8);
+  }
+
+  30% {
+    opacity: 1;
+    transform: translateX(var(--seek-dir, 10px)) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateX(var(--seek-dir, 20px)) scale(1);
+  }
+}
+
+@keyframes rr-fade-zoom-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes rr-fade-zoom-out {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+
+@keyframes rr-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes rr-bounce {
+
+  0%,
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+
+  50% {
+    transform: translate3d(-50%, -10px, 0);
+  }
 }

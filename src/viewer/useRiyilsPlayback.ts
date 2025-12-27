@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePlaybackController } from '../playback/PlaybackControllerContext'
 import { useRiyilsObserver } from '../observe/useRiyilsObserver'
+import { resetVideoSource } from '../use-video-source'
 
 const PLAY_VERIFY_MS = 260
 const READY_TIMEOUT_MS = 1200
@@ -52,6 +53,7 @@ export function useRiyilsPlayback(
     const [isPlaying, setIsPlaying] = useState(true)
     const [hasError, setHasError] = useState(false)
     const [hasStarted, setHasStarted] = useState(false)
+    const [retryCount, setRetryCount] = useState(0)
 
     const playTokenRef = useRef(0)
     const retryingRef = useRef(false)
@@ -257,9 +259,11 @@ export function useRiyilsPlayback(
 
         setHasError(false)
         setIsPlaying(true)
+        setRetryCount((c) => c + 1)
 
         observer.retry(id)
         playbackController.reset('viewer', id)
+        resetVideoSource('viewer', id)
 
         requestAnimationFrame(() => {
             const v = getVideoEl(currentIndex)
@@ -285,8 +289,9 @@ export function useRiyilsPlayback(
             hasError,
             hasStarted,
             enableAutoAdvance,
+            retryCount,
         }),
-        [enableAutoAdvance, hasError, hasStarted, isMuted, isPlaying, isSpeedUp]
+        [enableAutoAdvance, hasError, hasStarted, isMuted, isPlaying, isSpeedUp, retryCount]
     )
 
     const playbackHandlers = useMemo(
