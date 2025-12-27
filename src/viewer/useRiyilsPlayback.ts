@@ -7,7 +7,7 @@ const READY_TIMEOUT_MS = 1200
 
 function waitForReady(video: HTMLVideoElement): Promise<boolean> {
     if (!video.src) return Promise.resolve(false)
-    if (video.readyState >= 2) return Promise.resolve(true)
+    if (video.readyState >= 3) return Promise.resolve(true)
 
     return new Promise((resolve) => {
         let done = false
@@ -25,14 +25,14 @@ function waitForReady(video: HTMLVideoElement): Promise<boolean> {
             resolve(ok)
         }
 
-        const onReady = () => finish(true)
+        const onReady = () => finish(video.readyState >= 3)
         const onError = () => finish(false)
 
         video.addEventListener('canplay', onReady, { once: true })
         video.addEventListener('loadeddata', onReady, { once: true })
         video.addEventListener('error', onError, { once: true })
 
-        setTimeout(() => finish(video.readyState >= 2), READY_TIMEOUT_MS)
+        setTimeout(() => finish(video.readyState >= 3), READY_TIMEOUT_MS)
     })
 }
 
@@ -78,15 +78,19 @@ export function useRiyilsPlayback(
         if (!video || !id || hasError) return
         if (id !== activeIdRef.current) return
 
-        if (video.readyState === 0) {
+        if (video.readyState < 2) {
             if (mountedRef.current) setHasStarted(false)
             video.load()
             return
         }
 
+        if (video.readyState < 3) {
+            return
+        }
+
         const token = ++playTokenRef.current
 
-        if (!isPlaying) {
+        if (!isPlaying && !isSpeedUp) {
             playbackController.reset('viewer', id)
             video.pause()
             observer.pause(id, 'user')
@@ -118,8 +122,6 @@ export function useRiyilsPlayback(
         if (result === 'blocked') {
             observer.mute(id, true, 'autoplay')
         }
-
-        setIsPlaying(false)
     }, [
         currentIndex,
         getActiveId,
@@ -222,7 +224,7 @@ export function useRiyilsPlayback(
         if (id) observer.ended(id, enableAutoAdvance)
         if (!enableAutoAdvance) return
         const v = getVideoEl(currentIndex)
-        if (!v) return
+        if (!v || v.readyState < 3) return
         v.currentTime = 0
         void applyPlayback()
     }, [applyPlayback, currentIndex, enableAutoAdvance, getActiveId, getVideoEl, observer])
@@ -287,7 +289,15 @@ export function useRiyilsPlayback(
         () => ({
             togglePlay,
             toggleMute,
-            setSpeedUp: setIsSpeedUp,
+            setSpeedUp: (v: boolean) => {
+                setIsSpeedUp(v)
+                if (!v) {
+                    const video = getVideoEl(currentIndex)
+                    if (video && !video.paused) {
+                        setIsPlaying(true)
+                    }
+                }
+            },
             seek,
             onEnded,
             onError,

@@ -20,6 +20,7 @@ export function useRiyilsGestures(
     const longPressTimer = useRef<number | null>(null)
     const doubleTapTimer = useRef<number | null>(null)
     const longPressTriggered = useRef(false)
+    const suppressNextClick = useRef(false)
 
     useEffect(() => {
         return () => {
@@ -50,16 +51,23 @@ export function useRiyilsGestures(
     const onStopSpeed = useCallback(() => {
         clearTimer(longPressTimer)
         if (longPressTriggered.current) {
+            suppressNextClick.current = true
             onIntent({ type: 'speed-stop' })
             longPressTriggered.current = false
         }
     }, [onIntent])
+
 
     const onZoneClick = useCallback(
         (zone: GestureZone, e: React.MouseEvent | React.TouchEvent) => {
             e.preventDefault()
             e.stopPropagation()
             if (disabled) return
+
+            if (suppressNextClick.current) {
+                suppressNextClick.current = false
+                return
+            }
 
             if (longPressTriggered.current) {
                 longPressTriggered.current = false

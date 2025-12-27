@@ -60,20 +60,15 @@ function getHlsConfig(): Partial<HlsConfig> {
         autoStartLoad: true,
         capLevelToPlayerSize: true,
         enableWorker: true,
-
         abrEwmaDefaultEstimate: initialBw,
         startLevel: -1,
-
         maxBufferLength: 30,
         maxMaxBufferLength: 60,
         maxBufferHole: 0.5,
-
         fragLoadingTimeOut: 10000,
         manifestLoadingTimeOut: 10000,
-
         abrBandWidthFactor: 0.9,
         abrBandWidthUpFactor: 0.7,
-
         liveSyncDurationCount: 3,
     }
 }
@@ -283,6 +278,12 @@ class VideoSourceManager {
         if (!entry) return
 
         entry.refCount += 1
+
+        if (video.poster) {
+            try {
+                video.load()
+            } catch { }
+        }
 
         if (entry.hls) {
             entry.hls.attachMedia(video)

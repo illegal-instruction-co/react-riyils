@@ -243,7 +243,6 @@ const RiyilsSlide = React.memo(function RiyilsSlide({
           aria-label={t.forward}
           disabled={playback.hasError}
         />
-
       </fieldset>
 
       {active && !playback.hasError && (
@@ -318,12 +317,17 @@ function VideoEl({
   const containerRef = useRef<HTMLDivElement>(null)
   const className = `react-riyils-viewer__video ${active ? 'active' : 'react-riyils-viewer__video-buffer'}`
   const videoRef = useRef<HTMLVideoElement | null>(null)
+  const [isReady, setIsReady] = useState(false)
 
   useEffect(() => {
     const v = videoRef.current
     if (!v || active) return
     v.pause()
   }, [active])
+
+  useEffect(() => {
+    setIsReady(false)
+  }, [video.id, activeIndex, index])
 
   useEffect(() => {
     if (!containerRef.current || !shouldLoad) return
@@ -333,17 +337,32 @@ function VideoEl({
     videoEl.setAttribute('playsinline', '')
     videoEl.setAttribute('webkit-playsinline', '')
     videoEl.dataset.riyilsIndex = String(index)
+    videoEl.preload = 'metadata'
+    if (video.thumbnailUrl) videoEl.poster = video.thumbnailUrl
+
+    const onReady = () => setIsReady(true)
+    const onError = () => setIsReady(false)
+
+    videoEl.addEventListener('loadeddata', onReady)
+    videoEl.addEventListener('loadedmetadata', onReady)
+    videoEl.addEventListener('canplay', onReady)
+    videoEl.addEventListener('error', onError)
+
     containerRef.current.appendChild(videoEl)
     videoRef.current = videoEl
 
     return () => {
+      videoEl.removeEventListener('loadeddata', onReady)
+      videoEl.removeEventListener('loadedmetadata', onReady)
+      videoEl.removeEventListener('canplay', onReady)
+      videoEl.removeEventListener('error', onError)
       videoEl.pause()
       videoEl.removeAttribute('src')
       videoEl.load()
       videoEl.remove()
       videoRef.current = null
     }
-  }, [video.id, className, shouldLoad, activeIndex, index])
+  }, [video.id, className, shouldLoad, activeIndex, index, video.thumbnailUrl])
 
   useVideoSource(videoRef, 'viewer', video.id, video.videoUrl, shouldLoad)
 
@@ -386,10 +405,7 @@ function VideoEl({
 
   const v = videoRef.current
 
-  const showLoading =
-    active &&
-    !playback.hasError &&
-    (!v || v.readyState < 3)
+  const showLoading = active && !playback.hasError && (!v || v.readyState < 2 || !isReady)
 
   return (
     <div className="react-riyils-viewer__video-wrapper">
@@ -538,12 +554,9 @@ function RiyilsViewerInner({
     [currentIndex, getVideoEl, playbackHandlers]
   )
 
-  const hardStopAllExcept = useCallback(
-    (keepIndex: number) => {
-      registry.stopAllExcept(keepIndex)
-    },
-    [registry]
-  )
+  const hardStopAllExcept = useCallback((keepIndex: number) => {
+    registry.stopAllExcept(keepIndex)
+  }, [registry])
 
   const handleSlideChange = useCallback(
     (s: SwiperType) => {
@@ -736,7 +749,6 @@ function RiyilsViewerInner({
     </div>
   )
 }
-
 
 export function RiyilsViewer(props: RiyilsViewerProps) {
   return <RiyilsViewerInner {...props} />
