@@ -11,6 +11,12 @@ export {
 } from './carousel/RiyilsCarousel'
 
 export {
+  RiyilsExplore,
+  type ExploreItem,
+  type RiyilsExploreProps,
+} from './explore/RiyilsExplore'
+
+export {
   defaultReactRiyilsTranslations,
   type RiyilsCarouselProps,
   type ReactRiyilsTranslations,

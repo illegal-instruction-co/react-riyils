@@ -1,0 +1,54 @@
+.riyils-explore-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-auto-flow: dense;
+    gap: 4px;
+    padding: 4px;
+    max-width: 100%;
+}
+
+.riyils-explore-item {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+    cursor: pointer;
+    background: rgba(0, 0, 0, 0.05);
+    border: none;
+    padding: 0;
+    margin: 0;
+    display: block;
+    width: 100%;
+}
+
+.riyils-explore-item:nth-child(10n + 3) {
+    grid-column: span 2;
+    grid-row: span 2;
+    aspect-ratio: auto;
+    /* Allow filling the grid tracks */
+}
+
+.riyils-explore-item:nth-child(10n + 6) {
+    grid-row: span 2;
+    aspect-ratio: auto;
+}
+
+.riyils-explore-item img,
+.riyils-explore-item video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.3s ease;
+}
+
+.riyils-explore-item:hover img,
+.riyils-explore-item:hover video {
+    transform: scale(1.05);
+}
+
+.riyils-explore-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: #000;
+}

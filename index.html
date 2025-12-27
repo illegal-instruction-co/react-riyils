@@ -572,7 +572,7 @@
   <script type="text/babel">
     const { useState, useEffect, useRef } = React
     const { createRoot } = ReactDOM
-    const { RiyilsCarousel, RiyilsViewer, PlaybackControllerProvider } = window.ReactRiyils || {}
+    const { RiyilsCarousel, RiyilsViewer, RiyilsExplore, PlaybackControllerProvider } = window.ReactRiyils || {}
 
     const TEXT = {
       brand: 'React Riyils',
@@ -605,6 +605,14 @@
       const [viewer, setViewer] = useState(false)
       const loading = useRef(false)
       const [liked, setLiked] = useState(false)
+
+      const exploreItems = React.useMemo(() => {
+        return Array.from({ length: 12 }).map((_, i) => ({
+          id: `explore-${i}`,
+          videoUrl: BASE_VIDEOS[i % BASE_VIDEOS.length].videoUrl,
+          videos: [...BASE_VIDEOS].sort(() => Math.random() - 0.5).map(v => ({ ...v, id: Math.random().toString(36).slice(2) }))
+        }))
+      }, [])
 
       useEffect(() => {
         if (loading.current) return
@@ -647,150 +655,157 @@
       ]
 
       return (
-        <div className="app">
-          <header className="container">
-            <nav className="nav" aria-label="Primary">
-              <div className="brand" aria-label={TEXT.brand}>
-                <div className="brandMark" aria-hidden="true">
-                  <i className="fa-solid fa-play"></i>
-                </div>
-                <span className="brandName">{TEXT.brand}</span>
-              </div>
-
-              <div className="navRight">
-                <a className="iconBtn" href={TEXT.github} aria-label="GitHub" target="_blank" rel="noreferrer">
-                  <i className="fa-brands fa-github"></i>
-                </a>
-              </div>
-            </nav>
-          </header>
-
-          <main className="main">
-            <section className="container hero">
-              <div className="heroInner fadeUp">
-                <div>
-                  <div className="badge" role="note" aria-label={TEXT.tagline}>
-                    <span className="badgeDot" aria-hidden="true"></span>
-                    <span className="badgeText">{TEXT.tagline}</span>
+        <PlaybackControllerProvider>
+          <div className="app">
+            <header className="container">
+              <nav className="nav" aria-label="Primary">
+                <div className="brand" aria-label={TEXT.brand}>
+                  <div className="brandMark" aria-hidden="true">
+                    <i className="fa-solid fa-play"></i>
                   </div>
-
-                  <h1 className="h1">
-                    {TEXT.heroTitleA}
-                    <br />
-                    <span className="gradientText">{TEXT.heroTitleB}</span>
-                  </h1>
-
-                  <p className="sub">{TEXT.heroSubtitle}</p>
-
-                  <div className="mono monoBlock" aria-hidden="true">
-                    <div>No autoplay hacks.</div>
-                    <div>No race conditions.</div>
-                    <div>Just predictable video state.</div>
-                  </div>
+                  <span className="brandName">{TEXT.brand}</span>
                 </div>
 
-                <aside className="heroSide" aria-label="Status">
-                  <div className="panelRow">
-                    <div className="panelKey">Network</div>
-                    <div className="panelVal">{
-                      (() => {
-                        if (!navigator.onLine) return "Offline";
-                        if (navigator.connection && navigator.connection.effectiveType) {
-                          const type = navigator.connection.effectiveType;
-                          switch (type) {
-                            case 'slow-2g': return 'Slow 2G';
-                            case '2g': return '2G';
-                            case '3g': return '3G';
-                            case '4g': return '4G';
-                            default: return type;
+                <div className="navRight">
+                  <a className="iconBtn" href={TEXT.github} aria-label="GitHub" target="_blank" rel="noreferrer">
+                    <i className="fa-brands fa-github"></i>
+                  </a>
+                </div>
+              </nav>
+            </header>
+
+            <main className="main">
+              <section className="container hero">
+                <div className="heroInner fadeUp">
+                  <div>
+                    <div className="badge" role="note" aria-label={TEXT.tagline}>
+                      <span className="badgeDot" aria-hidden="true"></span>
+                      <span className="badgeText">{TEXT.tagline}</span>
+                    </div>
+
+                    <h1 className="h1">
+                      {TEXT.heroTitleA}
+                      <br />
+                      <span className="gradientText">{TEXT.heroTitleB}</span>
+                    </h1>
+
+                    <p className="sub">{TEXT.heroSubtitle}</p>
+
+                    <div className="mono monoBlock" aria-hidden="true">
+                      <div>No autoplay hacks.</div>
+                      <div>No race conditions.</div>
+                      <div>Just predictable video state.</div>
+                    </div>
+                  </div>
+
+                  <aside className="heroSide" aria-label="Status">
+                    <div className="panelRow">
+                      <div className="panelKey">Network</div>
+                      <div className="panelVal">{
+                        (() => {
+                          if (!navigator.onLine) return "Offline";
+                          if (navigator.connection && navigator.connection.effectiveType) {
+                            const type = navigator.connection.effectiveType;
+                            switch (type) {
+                              case 'slow-2g': return 'Slow 2G';
+                              case '2g': return '2G';
+                              case '3g': return '3G';
+                              case '4g': return '4G';
+                              default: return type;
+                            }
                           }
-                        }
-                        return 'Unknown';
-                      })()
-                    }</div>
+                          return 'Unknown';
+                        })()
+                      }</div>
+                    </div>
+                    <div className="panelRow">
+                      <div className="panelKey">Autoplay</div>
+                      <div className="panelVal">{typeof window !== 'undefined' && window.HTMLMediaElement && typeof window.HTMLMediaElement.prototype.play === 'function' ? "Allowed" : "Blocked"}</div>
+                    </div>
+                    <div className="panelRow">
+                      <div className="panelKey">Buffered</div>
+                      <div className="panelVal">{videos.length - index - 1} ahead</div>
+                    </div>
+                  </aside>
+                </div>
+              </section>
+
+              <div className="container stage" aria-label="Demo">
+                <div className="stageGlow" aria-hidden="true"></div>
+                <div className="viewerWrap">
+                  <div className="hud" aria-hidden="true">
+                    <span className="hudDot"></span>
+                    <span className="hudText">
+                      {(() => {
+                        let network = (() => {
+                          if (!navigator.onLine) return "Offline";
+                          if (navigator.connection && navigator.connection.effectiveType) {
+                            const type = navigator.connection.effectiveType;
+                            switch (type) {
+                              case 'slow-2g': return 'Slow 2G';
+                              case '2g': return '2G';
+                              case '3g': return '3G';
+                              case '4g': return '4G';
+                              default: return type;
+                            }
+                          }
+                          return 'Unknown';
+                        })();
+                        let autoplay = (typeof window !== 'undefined' && window.HTMLMediaElement && typeof window.HTMLMediaElement.prototype.play === 'function') ? "Allowed" : "Blocked";
+                        return `Network: ${network} · Autoplay: ${autoplay}`;
+                      })()}
+                    </span>
                   </div>
-                  <div className="panelRow">
-                    <div className="panelKey">Autoplay</div>
-                    <div className="panelVal">{typeof window !== 'undefined' && window.HTMLMediaElement && typeof window.HTMLMediaElement.prototype.play === 'function' ? "Allowed" : "Blocked"}</div>
+
+                  <div className="hudRight" aria-hidden="true">
+                    {`Buffered: ${videos.length - index - 1} ahead`}
                   </div>
-                  <div className="panelRow">
-                    <div className="panelKey">Buffered</div>
-                    <div className="panelVal">{videos.length - index - 1} ahead</div>
+
+                  <div className="frameInner">
+                    <RiyilsCarousel
+                      videos={videos}
+                      currentIndex={index}
+                      onVideoChange={setIndex}
+                      onVideoClick={() => setViewer(true)}
+                      enableAutoAdvance
+                    />
                   </div>
-                </aside>
+
+                </div>
+
+                <div className="stats" aria-label="Stats">
+                  {TEXT.stats.map(s => (
+                    <div className="stat" key={s.l}>
+                      <div className="statV">{s.v}</div>
+                      <div className="statL">{s.l}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {viewer && (
+                  <div className="viewerOverlay" role="dialog" aria-modal="true">
+                    <RiyilsViewer
+                      key={`viewer-${videos[index].id}`}
+                      videos={videos}
+                      initialIndex={index}
+                      onVideoChange={setIndex}
+                      onClose={() => setViewer(false)}
+                      enableAutoAdvance
+                      controls={viewerControls}
+                    />
+                  </div>
+                )}
               </div>
+            </main>
+
+            <section className="container" style={{ marginBottom: 60 }}>
+              <h2 className="h1" style={{ fontSize: '32px', marginBottom: '24px' }}>Explore</h2>
+              <RiyilsExplore items={exploreItems} />
             </section>
 
-            <PlaybackControllerProvider className="container stage" aria-label="Demo">
-              <div className="stageGlow" aria-hidden="true"></div>
-              <div className="viewerWrap">
-                <div className="hud" aria-hidden="true">
-                  <span className="hudDot"></span>
-                  <span className="hudText">
-                    {(() => {
-                      let network = (() => {
-                        if (!navigator.onLine) return "Offline";
-                        if (navigator.connection && navigator.connection.effectiveType) {
-                          const type = navigator.connection.effectiveType;
-                          switch (type) {
-                            case 'slow-2g': return 'Slow 2G';
-                            case '2g': return '2G';
-                            case '3g': return '3G';
-                            case '4g': return '4G';
-                            default: return type;
-                          }
-                        }
-                        return 'Unknown';
-                      })();
-                      let autoplay = (typeof window !== 'undefined' && window.HTMLMediaElement && typeof window.HTMLMediaElement.prototype.play === 'function') ? "Allowed" : "Blocked";
-                      return `Network: ${network} · Autoplay: ${autoplay}`;
-                    })()}
-                  </span>
-                </div>
-
-                <div className="hudRight" aria-hidden="true">
-                  {`Buffered: ${videos.length - index - 1} ahead`}
-                </div>
-
-                <div className="frameInner">
-                  <RiyilsCarousel
-                    videos={videos}
-                    currentIndex={index}
-                    onVideoChange={setIndex}
-                    onVideoClick={() => setViewer(true)}
-                    enableAutoAdvance
-                  />
-                </div>
-
-              </div>
-
-              <div className="stats" aria-label="Stats">
-                {TEXT.stats.map(s => (
-                  <div className="stat" key={s.l}>
-                    <div className="statV">{s.v}</div>
-                    <div className="statL">{s.l}</div>
-                  </div>
-                ))}
-              </div>
-
-              {viewer && (
-                <div className="viewerOverlay" role="dialog" aria-modal="true">
-                  <RiyilsViewer
-                    key={`viewer-${videos[index].id}`}
-                    videos={videos}
-                    initialIndex={index}
-                    onVideoChange={setIndex}
-                    onClose={() => setViewer(false)}
-                    enableAutoAdvance
-                    controls={viewerControls}
-                  />
-                </div>
-              )}
-            </PlaybackControllerProvider>
-          </main>
-
-          <footer className="footer">MIT Licensed · React 18 · Swiper 11 · Built in public</footer>
-        </div>
+            <footer className="footer">MIT Licensed · React 18 · Swiper 11 · Built in public</footer>
+          </div>
+        </PlaybackControllerProvider>
       )
     }
 
