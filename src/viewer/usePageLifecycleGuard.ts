@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react'
 
-import { isIosSafari } from '../utils'
+
 
 interface IosSafariGuardOptions {
     getActiveId: () => string | undefined

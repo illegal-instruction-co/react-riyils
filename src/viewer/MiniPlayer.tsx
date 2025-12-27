@@ -8,7 +8,7 @@ type MiniPlayerProps = {
 }
 
 export function MiniPlayer({ videoEl, onClose, onMaximize }: Readonly<MiniPlayerProps>) {
-    const rootRef = useRef<HTMLDivElement>(null)
+    const rootRef = useRef<HTMLDialogElement>(null)
     const videoHostRef = useRef<HTMLDivElement>(null)
 
     const [pos, setPos] = useState({ x: -20, y: -80 })
@@ -93,7 +93,7 @@ export function MiniPlayer({ videoEl, onClose, onMaximize }: Readonly<MiniPlayer
     }
 
     return (
-        <div
+        <dialog
             ref={rootRef}
             className="react-riyils-mini-player"
             style={{ transform: `translate3d(${pos.x}px, ${pos.y}px, 0)` }}
@@ -101,9 +101,9 @@ export function MiniPlayer({ videoEl, onClose, onMaximize }: Readonly<MiniPlayer
             onPointerMove={onMove}
             onPointerUp={onUp}
             onPointerCancel={onUp}
-            role="dialog"
             aria-label="Mini Player"
             tabIndex={0}
+            open
             onKeyDown={handleKeyDown}
         >
             <div ref={videoHostRef} className="react-riyils-mini-player__host" />
@@ -134,6 +134,6 @@ export function MiniPlayer({ videoEl, onClose, onMaximize }: Readonly<MiniPlayer
                     <X size={14} />
                 </button>
             </div>
-        </div>
+        </dialog>
     )
 }

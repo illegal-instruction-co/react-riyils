@@ -1,6 +1,6 @@
 import React, { memo } from 'react'
 import { Play, AlertCircle, RotateCcw } from 'lucide-react'
-import type { ReactRiyilsTranslations } from '../index'
+import type { ReactRiyilsTranslations } from './types'
 import { useRiyilsObserver } from '../observe/useRiyilsObserver'
 
 type Observer = ReturnType<typeof useRiyilsObserver>

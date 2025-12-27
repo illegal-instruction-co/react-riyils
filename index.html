@@ -572,7 +572,7 @@
   <script type="text/babel">
     const { useState, useEffect, useRef } = React
     const { createRoot } = ReactDOM
-    const { ReactRiyils, RiyilsViewer, PlaybackControllerProvider } = window.ReactRiyils || {}
+    const { RiyilsCarousel, RiyilsViewer, PlaybackControllerProvider } = window.ReactRiyils || {}
 
     const TEXT = {
       brand: 'React Riyils',
@@ -753,7 +753,7 @@
                 </div>
 
                 <div className="frameInner">
-                  <ReactRiyils
+                  <RiyilsCarousel
                     videos={videos}
                     currentIndex={index}
                     onVideoChange={setIndex}

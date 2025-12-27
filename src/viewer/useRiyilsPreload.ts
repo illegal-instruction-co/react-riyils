@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { preloadVideoSource } from '../use-video-source'
-import type { Video } from '../riyils-viewer'
+import type { Video } from './RiyilsViewer'
 
 export function useRiyilsPreload(
     videos: Video[],

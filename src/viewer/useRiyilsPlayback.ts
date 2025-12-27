@@ -40,6 +40,16 @@ function waitForReady(video: HTMLVideoElement): Promise<boolean> {
 
 type Observer = ReturnType<typeof useRiyilsObserver>
 
+export type PlaybackState = {
+    isMuted: boolean
+    isSpeedUp: boolean
+    isPlaying: boolean
+    hasError: boolean
+    hasStarted: boolean
+    enableAutoAdvance: boolean
+    retryCount: number
+}
+
 export function useRiyilsPlayback(
     getVideoEl: (index: number) => HTMLVideoElement | null,
     getActiveId: () => string | undefined,

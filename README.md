@@ -136,10 +136,10 @@ npm install react-riyils
 The `PlaybackControllerProvider` component can be used to wrap both the Carousel (`ReactRiyils`) and Viewer (`RiyilsViewer`) components. This provider manages video playback control and synchronization. It is typically used as a top-level container:
 
 ```tsx
-import { PlaybackControllerProvider, ReactRiyils, RiyilsViewer } from 'react-riyils'
+import { PlaybackControllerProvider, RiyilsCarousel, RiyilsViewer } from 'react-riyils'
 
 <PlaybackControllerProvider>
-  <ReactRiyils ... />
+  <RiyilsCarousel ... />
   {/* or */}
   <RiyilsViewer ... />
 </PlaybackControllerProvider>
@@ -152,7 +152,7 @@ Basic functionality works without this provider, but it is recommended when usin
 ### Carousel
 
 ```tsx
-import { ReactRiyils } from 'react-riyils'
+import { RiyilsCarousel } from 'react-riyils'
 
 const videos = [
   {
@@ -161,7 +161,7 @@ const videos = [
   }
 ]
 
-<ReactRiyils
+<RiyilsCarousel
   videos={videos}
   onVideoClick={(index) => console.log(index)}
   onVideoChange={(index) => console.log(index)}

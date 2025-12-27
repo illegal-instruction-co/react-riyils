@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type RefObject } from 'react'
+import { useEffect, useRef, useState, useMemo, type RefObject } from 'react'
 import { useRiyilsObserver } from '../observe/useRiyilsObserver'
 
 const PREVIEW_DURATION_MS = 2000
@@ -79,7 +79,7 @@ export function useCarouselPlayback(
                     }, PREVIEW_DURATION_MS)
                 }
 
-            } catch (err) {
+            } catch {
                 if (isCancelled || !mountedRef.current) return
 
 
@@ -113,7 +113,7 @@ export function useCarouselPlayback(
         }
     }, [hasError, shouldLoad, isActive, videoRef])
 
-    return {
+    return useMemo(() => ({
         hasError,
         onError: () => {
             if (!mountedRef.current) return
@@ -130,5 +130,5 @@ export function useCarouselPlayback(
 
             video.load()
         },
-    }
+    }), [hasError, videoId, observer, videoRef])
 }
