@@ -674,10 +674,12 @@
   position: absolute;
   inset: 0;
   z-index: 20;
-  background: var(--rr-bg-card);
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
 }
 
 .react-riyils-viewer__loading~video,

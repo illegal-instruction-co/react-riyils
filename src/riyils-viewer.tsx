@@ -350,39 +350,69 @@ function VideoEl({
   }, [video.id, activeIndex, index])
 
   useEffect(() => {
-    if (!containerRef.current || !shouldLoad) return
+    const container = containerRef.current
+    if (!container || !shouldLoad) return
 
     const videoEl = document.createElement('video')
+
     videoEl.className = className
     videoEl.setAttribute('playsinline', '')
     videoEl.setAttribute('webkit-playsinline', '')
     videoEl.dataset.riyilsIndex = String(index)
+
     videoEl.preload = 'metadata'
-    if (video.thumbnailUrl) videoEl.poster = video.thumbnailUrl
 
-    const onReady = () => setIsReady(true)
-    const onError = () => setIsReady(false)
+    if (video.thumbnailUrl) {
+      videoEl.poster = video.thumbnailUrl
+    }
 
-    videoEl.addEventListener('loadeddata', onReady)
-    videoEl.addEventListener('loadedmetadata', onReady)
-    videoEl.addEventListener('canplay', onReady)
-    videoEl.addEventListener('error', onError)
+    let mounted = true
 
-    containerRef.current.appendChild(videoEl)
+    const markReady = () => {
+      if (!mounted) return
+      if (videoEl.readyState >= 2) {
+        setIsReady(true)
+      }
+    }
+
+    const markError = () => {
+      if (!mounted) return
+      setIsReady(false)
+    }
+
+    videoEl.addEventListener('loadeddata', markReady)
+    videoEl.addEventListener('canplay', markReady)
+    videoEl.addEventListener('error', markError)
+
+    container.appendChild(videoEl)
     videoRef.current = videoEl
 
+    markReady()
+
     return () => {
-      videoEl.removeEventListener('loadeddata', onReady)
-      videoEl.removeEventListener('loadedmetadata', onReady)
-      videoEl.removeEventListener('canplay', onReady)
-      videoEl.removeEventListener('error', onError)
-      videoEl.pause()
+      mounted = false
+
+      videoEl.removeEventListener('loadeddata', markReady)
+      videoEl.removeEventListener('canplay', markReady)
+      videoEl.removeEventListener('error', markError)
+
+      try {
+        videoEl.pause()
+      } catch { }
+
       videoEl.removeAttribute('src')
-      videoEl.load()
-      videoEl.remove()
+
+      try {
+        videoEl.load()
+      } catch { }
+
+      if (container.contains(videoEl)) {
+        videoEl.remove()
+      }
+
       videoRef.current = null
     }
-  }, [video.id, className, shouldLoad, activeIndex, index, video.thumbnailUrl])
+  }, [video.id, className, shouldLoad, index, video.thumbnailUrl])
 
   useVideoSource(videoRef, 'viewer', video.id, video.videoUrl, shouldLoad)
 
