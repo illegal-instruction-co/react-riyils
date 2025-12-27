@@ -1,55 +1,88 @@
 export type RiyilsScope = 'carousel' | 'viewer'
+export type RiyilsLogLevel = 'debug' | 'info' | 'warn' | 'error' | 'none'
 
-export type RiyilsEvent =
+export interface RiyilsMetadata {
+    ts: number
+    level: RiyilsLogLevel
+    connection?: {
+        effectiveType?: string
+        type?: string
+    }
+}
+
+export type RiyilsEvent = (
     | {
         type: 'play'
-        scope: RiyilsScope
+        level: 'info'
         videoId: string
         reason: 'user' | 'auto' | 'resume'
     }
     | {
         type: 'pause'
-        scope: RiyilsScope
+        level: 'info'
         videoId: string
         reason: 'user' | 'auto' | 'visibility' | 'error'
     }
     | {
         type: 'mute'
-        scope: RiyilsScope
+        level: 'info'
         videoId: string
         muted: boolean
         reason: 'user' | 'autoplay'
     }
     | {
         type: 'ended'
-        scope: RiyilsScope
+        level: 'info'
         videoId: string
         autoAdvance: boolean
     }
     | {
         type: 'error'
-        scope: RiyilsScope
+        level: 'error'
         videoId: string
         error: 'network' | 'decode' | 'autoplay-blocked' | 'unknown'
     }
     | {
         type: 'retry'
-        scope: RiyilsScope
+        level: 'warn'
         videoId: string
     }
     | {
         type: 'seek'
-        scope: RiyilsScope
+        level: 'info'
         videoId: string
         delta: number
         method: 'gesture' | 'keyboard'
     }
+    | {
+        type: 'heartbeat'
+        level: 'debug'
+        videoId: string
+        position: number
+        duration: number
+    }
+    | {
+        type: 'waiting'
+        level: 'debug'
+        videoId: string
+    }
+    | {
+        type: 'playing'
+        level: 'debug'
+        videoId: string
+    }
+) & RiyilsMetadata & { scope: RiyilsScope }
 
 export type RiyilsEventInput =
-    | Omit<Extract<RiyilsEvent, { type: 'play' }>, 'scope'>
-    | Omit<Extract<RiyilsEvent, { type: 'pause' }>, 'scope'>
-    | Omit<Extract<RiyilsEvent, { type: 'mute' }>, 'scope'>
-    | Omit<Extract<RiyilsEvent, { type: 'ended' }>, 'scope'>
-    | Omit<Extract<RiyilsEvent, { type: 'error' }>, 'scope'>
-    | Omit<Extract<RiyilsEvent, { type: 'retry' }>, 'scope'>
-    | Omit<Extract<RiyilsEvent, { type: 'seek' }>, 'scope'>
+    | { type: 'play'; videoId: string; reason: 'user' | 'auto' | 'resume' }
+    | { type: 'pause'; videoId: string; reason: 'user' | 'auto' | 'visibility' | 'error' }
+    | { type: 'mute'; videoId: string; muted: boolean; reason: 'user' | 'autoplay' }
+    | { type: 'ended'; videoId: string; autoAdvance: boolean }
+    | { type: 'error'; videoId: string; error: 'network' | 'decode' | 'autoplay-blocked' | 'unknown' }
+    | { type: 'retry'; videoId: string }
+    | { type: 'seek'; videoId: string; delta: number; method: 'gesture' | 'keyboard' }
+    | { type: 'heartbeat'; videoId: string; position: number; duration: number }
+    | { type: 'waiting'; videoId: string }
+    | { type: 'playing'; videoId: string }
+
+

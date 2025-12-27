@@ -180,9 +180,11 @@ export function useRiyilsPlayback(
         const v = getVideoEl(currentIndex)
         if (!v) return
 
+        const id = getActiveId()
         const token = activeTokenRef.current
 
         const markLoading = () => {
+            if (id) observer.waiting(id)
             if (waitingTimeoutRef.current != null) return
             waitingTimeoutRef.current = globalThis.window.setTimeout(() => {
                 if (mountedRef.current && token === activeTokenRef.current) {
@@ -193,6 +195,7 @@ export function useRiyilsPlayback(
         }
 
         const markStarted = () => {
+            if (id) observer.playing(id)
             if (mountedRef.current && token === activeTokenRef.current) {
                 setHasStarted(true)
             }
@@ -213,7 +216,20 @@ export function useRiyilsPlayback(
                 waitingTimeoutRef.current = null
             }
         }
-    }, [currentIndex, getVideoEl])
+    }, [currentIndex, getVideoEl, getActiveId, observer])
+
+    useEffect(() => {
+        const id = getActiveId()
+        const v = getVideoEl(currentIndex)
+        if (!id || !v || !isPlaying || hasError) return
+
+        const interval = setInterval(() => {
+            if (v.paused) return
+            observer.heartbeat(id, v.currentTime, v.duration)
+        }, 5000)
+
+        return () => clearInterval(interval)
+    }, [currentIndex, getActiveId, getVideoEl, isPlaying, hasError, observer])
 
     const togglePlay = useMemo(() => throttle(() => {
         if (hasError) return

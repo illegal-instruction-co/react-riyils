@@ -1,49 +1,63 @@
 # React Riyils
 
-A React library for building high-performance vertical video experiences with Instagram/TikTok-style swiping, explore grids, and adaptive playback.
+React Riyils is a library for building high-performance vertical video experiences with Instagram/TikTok-style swiping, explore grids, and adaptive playback.
 
-React Riyils handles the heavy lifting of browser autoplay policies, resource management, and mobile gesture interactions, allowing you to focus on your UI.
-
-[Live Demo](https://illegal-instruction-co.github.io/react-riyils)
+React Riyils handles browser autoplay policies, resource management, and mobile gesture interactions.
 
 ---
 
 ## Core Documentation
 
-Browse the detailed guides below for integration and API reference:
-
 - [**Quick Start & Setup**](./docs/setup.md) - Installation, CSS imports, and the mandatory Playback Provider.
 - [**Components Reference**](./docs/components.md) - Detailed props and types for `RiyilsViewer`, `RiyilsCarousel`, and `RiyilsExplore`.
 - [**Interaction & Gestures**](./docs/interaction.md) - Mobile gestures, keyboard shortcuts, and haptic feedback.
+- [**Observability & Analytics**](./docs/observability.md) - Telemetry infrastructure, log levels, and custom instrumentation.
+
+---
+
+## Key Features
+
+- **Deterministic Playback**: Enforcement of browser autoplay rules with automatic muted fallbacks.
+- **Adaptive Quality**: Support for multiple quality variants and HLS via `hls.js`.
+- **Resource Management**: Dynamic attachment/detachment of media elements to save memory.
+- **Draggable MiniPlayer**: Picture-in-Picture implementation consistent across browsers.
+- **Professional Telemetry**: Standardized event tracking with severity filtering and rich metadata.
 
 ---
 
 ## Quick Example
 
 ```tsx
-import { PlaybackControllerProvider, RiyilsCarousel } from 'react-riyils'
+import { 
+  PlaybackControllerProvider, 
+  RiyilsObserverProvider, 
+  RiyilsCarousel,
+  RiyilsViewer,
+  RiyilsExplore
+} from 'react-riyils'
 import 'react-riyils/dist/index.css'
 
 const MyVideoApp = () => (
-  <PlaybackControllerProvider>
-    <RiyilsCarousel
-      videos={[{ id: '1', videoUrl: 'video.mp4' }]}
-      onVideoClick={(i) => console.log(i)}
-      onVideoChange={(i) => console.log(i)}
-    />
-  </PlaybackControllerProvider>
+  <RiyilsObserverProvider onEvent={console.log} logLevel="info">
+    <PlaybackControllerProvider>
+      <RiyilsCarousel
+        videos={videos}
+        onVideoChange={index => console.log('Active index:', index)}
+      />
+
+      <RiyilsViewer
+        videos={videos}
+        initialIndex={0}
+        onClose={() => {}}
+      />
+
+      <RiyilsExplore items={exploreItems} />
+    </PlaybackControllerProvider>
+  </RiyilsObserverProvider>
 )
 ```
 
 ---
-
-## Key Features
-
-- **Deterministic Playback**: Strict enforcement of browser autoplay rules with automatic muted fallbacks.
-- **Adaptive Quality**: Built-in support for multiple quality variants and HLS (`.m3u8`) via `hls.js`.
-- **Resource Management**: Only one video plays at a time; inactive videos are attached/detached dynamically to save memory.
-- **Draggable MiniPlayer**: A custom implementation of Picture-in-Picture that works consistently across all browsers.
-- **Premium UI**: Smooth spring animations, glassmorphism effects, and native-feeling swiping.
 
 ## License
 

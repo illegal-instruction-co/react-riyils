@@ -23,3 +23,8 @@ export {
 } from './carousel/types'
 
 export { PlaybackControllerProvider } from './playback/PlaybackControllerContext'
+export { RiyilsObserverProvider, useGlobalRiyilsObserver } from './observe/RiyilsObserverContext'
+export { useRiyilsObserver } from './observe/useRiyilsObserver'
+export type { RiyilsEvent, RiyilsScope, RiyilsMetadata } from './observe/riyils-events'
+
+

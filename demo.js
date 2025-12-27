@@ -1,6 +1,6 @@
 const { useState, useEffect, useRef } = React
 const { createRoot } = ReactDOM
-const { RiyilsCarousel, RiyilsViewer, RiyilsExplore, PlaybackControllerProvider } = globalThis.window.ReactRiyils || {}
+const { RiyilsCarousel, RiyilsViewer, RiyilsExplore, PlaybackControllerProvider, RiyilsObserverProvider } = globalThis.window.ReactRiyils || {}
 
 const TEXT = {
     brand: 'React Riyils',
@@ -159,192 +159,194 @@ function App() {
     ]
 
     return (
-        <PlaybackControllerProvider>
-            <div className="app">
-                <header className="container">
-                    <nav className="nav" aria-label="Primary">
-                        <div className="brand" aria-label={TEXT.brand}>
-                            <div className="brandMark" aria-hidden="true">
-                                <i className="fa-solid fa-play"></i>
-                            </div>
-                            <span className="brandName">{TEXT.brand}</span>
-                        </div>
-
-                        <div className="navRight">
-                            <a className="iconBtn" href="./docs/setup.md" aria-label="Documentation" title="View Docs">
-                                <i className="fa-solid fa-book"></i>
-                            </a>
-                            <a className="iconBtn" href={TEXT.github} aria-label="GitHub" target="_blank" rel="noreferrer" title="GitHub">
-                                <i className="fa-brands fa-github"></i>
-                            </a>
-                        </div>
-                    </nav>
-                </header>
-
-                <main className="main">
-                    <section className="container hero">
-                        <div className="heroInner fadeUp">
-                            <div>
-                                <div className="badge" role="note" aria-label={TEXT.tagline}>
-                                    <span className="badgeDot" aria-hidden="true"></span>
-                                    <span className="badgeText">{TEXT.tagline}</span>
+        <RiyilsObserverProvider onEvent={e => console.log('[Telemetry]', e.type, e)}>
+            <PlaybackControllerProvider>
+                <div className="app">
+                    <header className="container">
+                        <nav className="nav" aria-label="Primary">
+                            <div className="brand" aria-label={TEXT.brand}>
+                                <div className="brandMark" aria-hidden="true">
+                                    <i className="fa-solid fa-play"></i>
                                 </div>
-
-                                <h1 className="h1">
-                                    {TEXT.heroTitleA}
-                                    <br />
-                                    <span className="gradientText">{TEXT.heroTitleB}</span>
-                                </h1>
-
-                                <p className="sub">{TEXT.heroSubtitle}</p>
-
-                                <div className="installWrap">
-                                    <button className="installBtn" onClick={copyInstall} aria-label="Copy install command">
-                                        <code className="mono">npm install react-riyils</code>
-                                        <div className="installIcon">
-                                            <i className={`fa-solid ${copied ? 'fa-check' : 'fa-copy'}`}></i>
-                                        </div>
-                                    </button>
-                                    <div className={`installFeedback ${copied ? 'show' : ''}`}>Copied to clipboard!</div>
-                                </div>
+                                <span className="brandName">{TEXT.brand}</span>
                             </div>
 
-                            <aside className="heroSide" aria-label="Status">
-                                <div className="panelRow">
-                                    <div className="panelKey">Network</div>
-                                    <div className="panelVal">{network}</div>
-                                </div>
-                                <div className="panelRow">
-                                    <div className="panelKey">Autoplay</div>
-                                    <div className="panelVal">{globalThis.window !== undefined && globalThis.window.HTMLMediaElement && typeof globalThis.window.HTMLMediaElement.prototype.play === 'function' ? "Allowed" : "Blocked"}</div>
-                                </div>
-                                <div className="panelRow">
-                                    <div className="panelKey">Buffered</div>
-                                    <div className="panelVal">{videos.length - index - 1} ahead</div>
-                                </div>
-                            </aside>
-                        </div>
-                    </section>
-
-                    <div className="container stage" aria-label="Demo">
-                        <div className="stageGlow" aria-hidden="true"></div>
-                        <div className="viewerWrap">
-                            <div className="hud" aria-hidden="true">
-                                <span className="hudDot"></span>
-                                <span className="hudText">
-                                    {(() => {
-                                        const autoplay = (globalThis.window?.HTMLMediaElement?.prototype?.play) ? "Allowed" : "Blocked";
-                                        return `Network: ${network} · Autoplay: ${autoplay}`;
-                                    })()}
-                                </span>
+                            <div className="navRight">
+                                <a className="iconBtn" href="./docs/setup.md" aria-label="Documentation" title="View Docs">
+                                    <i className="fa-solid fa-book"></i>
+                                </a>
+                                <a className="iconBtn" href={TEXT.github} aria-label="GitHub" target="_blank" rel="noreferrer" title="GitHub">
+                                    <i className="fa-brands fa-github"></i>
+                                </a>
                             </div>
+                        </nav>
+                    </header>
 
-                            <div className="hudRight" aria-hidden="true">
-                                {`Buffered: ${videos.length - index - 1} ahead`}
-                            </div>
+                    <main className="main">
+                        <section className="container hero">
+                            <div className="heroInner fadeUp">
+                                <div>
+                                    <div className="badge" role="note" aria-label={TEXT.tagline}>
+                                        <span className="badgeDot" aria-hidden="true"></span>
+                                        <span className="badgeText">{TEXT.tagline}</span>
+                                    </div>
 
-                            <div className="frameInner">
-                                <RiyilsCarousel
-                                    videos={videos}
-                                    currentIndex={index}
-                                    onVideoChange={setIndex}
-                                    onVideoClick={() => setViewer(true)}
-                                    enableAutoAdvance
-                                />
-                            </div>
+                                    <h1 className="h1">
+                                        {TEXT.heroTitleA}
+                                        <br />
+                                        <span className="gradientText">{TEXT.heroTitleB}</span>
+                                    </h1>
 
-                        </div>
+                                    <p className="sub">{TEXT.heroSubtitle}</p>
 
-                        <div className="stats" aria-label="Stats">
-                            {TEXT.stats.map(s => (
-                                <div className="stat" key={s.l}>
-                                    <div className="statV">{s.v}</div>
-                                    <div className="statL">{s.l}</div>
-                                </div>
-                            ))}
-                        </div>
-
-                        {viewer && (
-                            <dialog className="viewerOverlay" aria-modal="true">
-                                <RiyilsViewer
-                                    key={`viewer-${videos[index].id}`}
-                                    videos={videos}
-                                    initialIndex={index}
-                                    onVideoChange={setIndex}
-                                    onClose={() => setViewer(false)}
-                                    enableAutoAdvance
-                                    controls={viewerControls}
-                                />
-                            </dialog>
-                        )}
-                    </div>
-
-                    <section className="container featuresSection">
-                        <div className="featuresGrid">
-                            <div className="featuresText">
-                                <h2 className="h2">Build faster with <span className="gradientText">ready-made</span> components</h2>
-                                <p className="p">React Riyils provides a high-level API to build complex video experiences without worrying about the underlying media logic.</p>
-
-                                <div className="featureList">
-                                    {Object.entries(FEATURES).map(([key, f]) => (
-                                        <button
-                                            key={key}
-                                            className={`featureItem ${selectedFeature === key ? 'active' : ''}`}
-                                            onClick={() => setSelectedFeature(key)}
-                                        >
-                                            <div className="featureDot"></div>
-                                            <div className="featureContent">
-                                                <div className="featureTitle">{f.title}</div>
-                                                <div className="featureDesc">{f.description}</div>
+                                    <div className="installWrap">
+                                        <button className="installBtn" onClick={copyInstall} aria-label="Copy install command">
+                                            <code className="mono">npm install react-riyils</code>
+                                            <div className="installIcon">
+                                                <i className={`fa-solid ${copied ? 'fa-check' : 'fa-copy'}`}></i>
                                             </div>
                                         </button>
-                                    ))}
+                                        <div className={`installFeedback ${copied ? 'show' : ''}`}>Copied to clipboard!</div>
+                                    </div>
                                 </div>
+
+                                <aside className="heroSide" aria-label="Status">
+                                    <div className="panelRow">
+                                        <div className="panelKey">Network</div>
+                                        <div className="panelVal">{network}</div>
+                                    </div>
+                                    <div className="panelRow">
+                                        <div className="panelKey">Autoplay</div>
+                                        <div className="panelVal">{globalThis.window !== undefined && globalThis.window.HTMLMediaElement && typeof globalThis.window.HTMLMediaElement.prototype.play === 'function' ? "Allowed" : "Blocked"}</div>
+                                    </div>
+                                    <div className="panelRow">
+                                        <div className="panelKey">Buffered</div>
+                                        <div className="panelVal">{videos.length - index - 1} ahead</div>
+                                    </div>
+                                </aside>
+                            </div>
+                        </section>
+
+                        <div className="container stage" aria-label="Demo">
+                            <div className="stageGlow" aria-hidden="true"></div>
+                            <div className="viewerWrap">
+                                <div className="hud" aria-hidden="true">
+                                    <span className="hudDot"></span>
+                                    <span className="hudText">
+                                        {(() => {
+                                            const autoplay = (globalThis.window?.HTMLMediaElement?.prototype?.play) ? "Allowed" : "Blocked";
+                                            return `Network: ${network} · Autoplay: ${autoplay}`;
+                                        })()}
+                                    </span>
+                                </div>
+
+                                <div className="hudRight" aria-hidden="true">
+                                    {`Buffered: ${videos.length - index - 1} ahead`}
+                                </div>
+
+                                <div className="frameInner">
+                                    <RiyilsCarousel
+                                        videos={videos}
+                                        currentIndex={index}
+                                        onVideoChange={setIndex}
+                                        onVideoClick={() => setViewer(true)}
+                                        enableAutoAdvance
+                                    />
+                                </div>
+
                             </div>
 
-                            <div className="codePreview">
-                                <div className="codeHeader">
-                                    <div className="codeDots">
-                                        <span></span><span></span><span></span>
+                            <div className="stats" aria-label="Stats">
+                                {TEXT.stats.map(s => (
+                                    <div className="stat" key={s.l}>
+                                        <div className="statV">{s.v}</div>
+                                        <div className="statL">{s.l}</div>
                                     </div>
-                                    <div className="codeTab">{FEATURES[selectedFeature].title}.jsx</div>
+                                ))}
+                            </div>
+
+                            {viewer && (
+                                <dialog className="viewerOverlay" aria-modal="true">
+                                    <RiyilsViewer
+                                        key={`viewer-${videos[index].id}`}
+                                        videos={videos}
+                                        initialIndex={index}
+                                        onVideoChange={setIndex}
+                                        onClose={() => setViewer(false)}
+                                        enableAutoAdvance
+                                        controls={viewerControls}
+                                    />
+                                </dialog>
+                            )}
+                        </div>
+
+                        <section className="container featuresSection">
+                            <div className="featuresGrid">
+                                <div className="featuresText">
+                                    <h2 className="h2">Build faster with <span className="gradientText">ready-made</span> components</h2>
+                                    <p className="p">React Riyils provides a high-level API to build complex video experiences without worrying about the underlying media logic.</p>
+
+                                    <div className="featureList">
+                                        {Object.entries(FEATURES).map(([key, f]) => (
+                                            <button
+                                                key={key}
+                                                className={`featureItem ${selectedFeature === key ? 'active' : ''}`}
+                                                onClick={() => setSelectedFeature(key)}
+                                            >
+                                                <div className="featureDot"></div>
+                                                <div className="featureContent">
+                                                    <div className="featureTitle">{f.title}</div>
+                                                    <div className="featureDesc">{f.description}</div>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
-                                <div className="codeBody">
-                                    <pre className="mono">
-                                        {FEATURES[selectedFeature].code}
-                                    </pre>
+
+                                <div className="codePreview">
+                                    <div className="codeHeader">
+                                        <div className="codeDots">
+                                            <span></span><span></span><span></span>
+                                        </div>
+                                        <div className="codeTab">{FEATURES[selectedFeature].title}.jsx</div>
+                                    </div>
+                                    <div className="codeBody">
+                                        <pre className="mono">
+                                            {FEATURES[selectedFeature].code}
+                                        </pre>
+                                    </div>
                                 </div>
                             </div>
+                        </section>
+
+                        <div className="stateInspector">
+                            <div className="inspectorLabel">Runtime State</div>
+                            <div className="inspectorRow">
+                                <span className="inspectorKey">Active Index</span>
+                                <span className="inspectorVal">{index}</span>
+                            </div>
+                            <div className="inspectorRow">
+                                <span className="inspectorKey">Viewer Active</span>
+                                <span className="inspectorVal">{viewer ? 'YES' : 'NO'}</span>
+                            </div>
                         </div>
+                    </main>
+
+                    <section className="container" style={{ marginBottom: 60 }}>
+                        <h2 className="h1" style={{ fontSize: '32px', marginBottom: '24px' }}>Explore</h2>
+                        <RiyilsExplore items={exploreItems} />
                     </section>
 
-                    <div className="stateInspector">
-                        <div className="inspectorLabel">Runtime State</div>
-                        <div className="inspectorRow">
-                            <span className="inspectorKey">Active Index</span>
-                            <span className="inspectorVal">{index}</span>
-                        </div>
-                        <div className="inspectorRow">
-                            <span className="inspectorKey">Viewer Active</span>
-                            <span className="inspectorVal">{viewer ? 'YES' : 'NO'}</span>
-                        </div>
-                    </div>
-                </main>
-
-                <section className="container" style={{ marginBottom: 60 }}>
-                    <h2 className="h1" style={{ fontSize: '32px', marginBottom: '24px' }}>Explore</h2>
-                    <RiyilsExplore items={exploreItems} />
-                </section>
-
-                <footer className="footer">
-                    {pkg ? (
-                        `${pkg.license} Licensed · React ${pkg.peerDependencies.react.match(/\d+/)} · Swiper ${pkg.dependencies.swiper.match(/\d+/)} · Built in public`
-                    ) : (
-                        'MIT Licensed · React · Swiper · Built in public'
-                    )}
-                </footer>
-            </div>
-        </PlaybackControllerProvider>
+                    <footer className="footer">
+                        {pkg ? (
+                            `${pkg.license} Licensed · React ${pkg.peerDependencies.react.match(/\d+/)} · Swiper ${pkg.dependencies.swiper.match(/\d+/)} · Built in public`
+                        ) : (
+                            'MIT Licensed · React · Swiper · Built in public'
+                        )}
+                    </footer>
+                </div>
+            </PlaybackControllerProvider>
+        </RiyilsObserverProvider>
     )
 }
 

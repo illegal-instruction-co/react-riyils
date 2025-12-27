@@ -1,11 +1,13 @@
 import { useCallback, useMemo, useRef, useEffect } from 'react'
 import type { RiyilsEvent, RiyilsEventInput, RiyilsScope } from './riyils-events'
+import { useGlobalRiyilsObserver } from './RiyilsObserverContext'
 
 export function useRiyilsObserver(
     scope: RiyilsScope,
     onEvent?: (e: RiyilsEvent) => void
 ) {
     const onEventRef = useRef(onEvent)
+    const globalObserver = useGlobalRiyilsObserver()
 
     useEffect(() => {
         onEventRef.current = onEvent
@@ -13,9 +15,19 @@ export function useRiyilsObserver(
 
     const emit = useCallback(
         (event: RiyilsEventInput) => {
-            onEventRef.current?.({ ...event, scope })
+            const conn = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
+            const metadata = {
+                ts: Date.now(),
+                connection: conn ? {
+                    effectiveType: conn.effectiveType,
+                    type: conn.type
+                } : undefined
+            }
+            const fullEvent = { ...event, ...metadata, scope } as RiyilsEvent;
+            onEventRef.current?.(fullEvent);
+            globalObserver.onEvent?.(fullEvent);
         },
-        [scope]
+        [scope, globalObserver]
     )
 
     return useMemo(
@@ -54,6 +66,15 @@ export function useRiyilsObserver(
 
             retry: (videoId: string) =>
                 emit({ type: 'retry', videoId }),
+
+            heartbeat: (videoId: string, position: number, duration: number) =>
+                emit({ type: 'heartbeat', videoId, position, duration }),
+
+            waiting: (videoId: string) =>
+                emit({ type: 'waiting', videoId }),
+
+            playing: (videoId: string) =>
+                emit({ type: 'playing', videoId }),
         }),
         [emit]
     )
