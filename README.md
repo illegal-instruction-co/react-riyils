@@ -56,6 +56,7 @@ It provides:
 
 * Vertical swipe navigation
 * Tap, double-tap, and long-press gestures
+* Gesture-based Expandable Captions
 * Hover-to-play for Explore grid tiles
 * Keyboard controls for desktop environments
 
@@ -212,6 +213,21 @@ Features:
 
 
 
+---
+
+### Expandable Captions
+
+The `RiyilsViewer` features a high-performance, gesture-driven expandable caption system.
+
+* **Gesture Control**: Drag the caption area up to expand and down to collapse.
+* **Tap to Toggle**: Quick tap functionality for immediate expansion/collapse.
+* **Premium UI**: Real-time glassmorphism (backdrop-blur) and smooth spring animations.
+* **Safe Areas**: Automatically accounts for mobile safe area insets.
+
+To use captions, simply include a `caption` string in your video object.
+
+---
+
 ### Custom Mini-Player (PiP)
 
 React Riyils replaces the inconsistent browser-native Picture-in-Picture with a fully custom, draggable **MiniPlayer**.
@@ -273,6 +289,7 @@ export interface Video {
   videoUrl: string | VideoQualityVariants
   thumbnailUrl?: string
   captionUrl?: string
+  caption?: string
 }
 ```
 

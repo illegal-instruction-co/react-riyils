@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
     AlertCircle,
     ChevronsLeft,
@@ -11,6 +11,7 @@ import {
 import { VideoEl } from './VideoEl'
 import { type Video, type RiyilsTranslations, type SlideHandlers } from './RiyilsViewer'
 import { type PlaybackState } from './useRiyilsPlayback'
+import { triggerHaptic } from '../utils'
 
 export type SlideUIState = {
     currentIndex: number
@@ -42,6 +43,13 @@ export const RiyilsSlide = React.memo(function RiyilsSlide({
 }) {
     const mounted = shouldKeepMounted(index, ui.currentIndex)
     const active = index === ui.currentIndex
+    const [isCaptionExpanded, setIsCaptionExpanded] = useState(false)
+
+    useEffect(() => {
+        if (!active) {
+            setIsCaptionExpanded(false)
+        }
+    }, [active])
 
     useEffect(() => {
         const el = document.querySelector('.react-riyils-viewer__gesture-zone.pressed')
@@ -171,6 +179,31 @@ export const RiyilsSlide = React.memo(function RiyilsSlide({
                         </div>
                     )}
                 </>
+            )}
+
+            {active && video.caption && (
+                <div className="react-riyils-viewer__caption-container">
+                    <button
+                        type="button"
+                        className={`react-riyils-viewer__caption-sheet ${isCaptionExpanded ? 'is-expanded' : ''}`}
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            setIsCaptionExpanded(!isCaptionExpanded)
+                            triggerHaptic()
+                        }}
+                        aria-expanded={isCaptionExpanded}
+                        aria-label={isCaptionExpanded ? 'Collapse caption' : 'Expand caption'}
+                    >
+                        <div className="react-riyils-viewer__caption-handle">
+                            <div className="react-riyils-viewer__caption-handle-bar" />
+                        </div>
+                        <div className="react-riyils-viewer__caption-content">
+                            <span className="react-riyils-viewer__caption-text">
+                                {video.caption}
+                            </span>
+                        </div>
+                    </button>
+                </div>
             )}
 
             <VideoEl

@@ -24,7 +24,6 @@
     grid-column: span 2;
     grid-row: span 2;
     aspect-ratio: auto;
-    /* Allow filling the grid tracks */
 }
 
 .riyils-explore-item:nth-child(10n + 6) {

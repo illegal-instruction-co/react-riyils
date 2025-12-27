@@ -29,12 +29,14 @@ import { RiyilsSlide, type SlideUIState } from './RiyilsSlide'
 import 'swiper/css'
 import 'swiper/css/virtual'
 import '../carousel/video-swiper.css'
+import { triggerHaptic } from '../utils'
 
 export interface Video {
     id: string
     videoUrl: string | VideoQualityVariants
     thumbnailUrl?: string
     captionUrl?: string
+    caption?: string
 }
 
 export interface RiyilsTranslations {
@@ -47,6 +49,8 @@ export interface RiyilsTranslations {
     mute: string
     unmute: string
     videoPlayer: string
+    more: string
+    less: string
 }
 
 export const defaultRiyilsTranslations: RiyilsTranslations = {
@@ -59,6 +63,8 @@ export const defaultRiyilsTranslations: RiyilsTranslations = {
     mute: 'Mute',
     unmute: 'Unmute',
     videoPlayer: 'Video player',
+    more: 'more',
+    less: 'less',
 }
 
 export interface RiyilsViewerProps {
@@ -96,11 +102,7 @@ const SCROLL_HINT_MS = 1000
 
 type SeekFeedback = 'forward' | 'rewind' | null
 
-function triggerHaptic() {
-    if (typeof navigator !== 'undefined' && navigator.vibrate) {
-        navigator.vibrate(10)
-    }
-}
+
 
 function useLockBodyScroll(isPipActive: boolean): void {
     useEffect(() => {
