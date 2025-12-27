@@ -24,14 +24,4 @@ export const VideoElementPool = {
 
         return video
     },
-
-    cleanup(id: string) {
-        const video = videoPool.get(id)
-        if (video) {
-            video.pause()
-            video.src = ''
-            video.remove()
-            videoPool.delete(id)
-        }
-    }
 }

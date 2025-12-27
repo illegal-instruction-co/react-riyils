@@ -16,6 +16,11 @@ export function useSharedVideo(
         const video = VideoElementPool.move(videoId, container, className)
         videoElementRef.current = video
 
+        return () => {
+            if (container.contains(video)) {
+                video.remove()
+            }
+        }
     }, [videoId, containerRef, className, shouldLoad])
 
     return videoElementRef

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePlaybackController } from '../playback/PlaybackControllerContext'
 import { useRiyilsObserver } from '../observe/useRiyilsObserver'
-import { resetVideoSource } from '../use-video-source'
 
 const PLAY_VERIFY_MS = 260
 const READY_TIMEOUT_MS = 1200
@@ -262,8 +261,6 @@ export function useRiyilsPlayback(
         setRetryCount((c) => c + 1)
 
         observer.retry(id)
-        playbackController.reset('viewer', id)
-        resetVideoSource('viewer', id)
 
         requestAnimationFrame(() => {
             const v = getVideoEl(currentIndex)

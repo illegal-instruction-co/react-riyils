@@ -1,6 +1,5 @@
 import { useEffect, useMemo, type RefObject } from 'react'
 import Hls, { type HlsConfig } from 'hls.js'
-import { isIosSafari } from './utils'
 
 export interface VideoQualityVariants {
     low?: string
@@ -290,14 +289,13 @@ class VideoSourceManager {
         }
     }
 
-    detach(key: string, video?: HTMLVideoElement): void {
+    detach(key: string, video?: HTMLVideoElement, scope?: VideoSourceScope): void {
         const entry = this.cache.get(key)
         if (!entry) {
-            if (video) detachMedia(video)
             return
         }
 
-        entry.refCount -= 1
+        entry.refCount = Math.max(0, entry.refCount - 1)
 
         if (entry.refCount <= 0) {
             this.cancelPendingDispose(key)
@@ -315,7 +313,7 @@ class VideoSourceManager {
             this.disposeTimeouts.set(key, timeoutId)
         }
 
-        if (video) detachMedia(video)
+        if (scope === 'viewer' && video) detachMedia(video)
     }
 
     reset(key: string): void {
@@ -344,32 +342,25 @@ export function useVideoSource(
     shouldLoad: boolean
 ): string | undefined {
     const finalUrl = useMemo(() => resolveFinalUrl(src), [src])
-    const key = useMemo(() => buildKey(scope, id), [scope, id])
+    const key = useMemo(() => {
+        if (scope === 'viewer') {
+            return `${scope}:${id}:${Math.random().toString(36).slice(2)}`
+        }
+        return buildKey(scope, id)
+    }, [scope, id])
 
     useEffect(() => {
         const video = videoRef.current
         if (!video) return
 
-        if (!shouldLoad || !src) {
-            if (scope !== 'viewer' && !isIosSafari()) {
-                videoSourceManager.detach(key, video)
-            }
-            return
-        }
-
-        let isAttached = false
-        const delay = scope === 'viewer' ? 0 : 150
+        const delay = 0
 
         const timer = globalThis.window.setTimeout(() => {
-            isAttached = true
             videoSourceManager.attach(video, key, src)
         }, delay)
 
         return () => {
             globalThis.window.clearTimeout(timer)
-            if (isAttached && scope !== 'viewer' && !isIosSafari()) {
-                videoSourceManager.detach(key, video)
-            }
         }
     }, [key, scope, shouldLoad, src, videoRef])
 

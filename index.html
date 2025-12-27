@@ -754,6 +754,7 @@
           {viewer && (
             <div className="viewerOverlay" role="dialog" aria-modal="true">
               <RiyilsViewer
+                key={`viewer-${videos[index].id}`}
                 videos={videos}
                 initialIndex={index}
                 onVideoChange={setIndex}

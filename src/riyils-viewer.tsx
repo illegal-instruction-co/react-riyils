@@ -18,7 +18,6 @@ import {
   Zap,
 } from 'lucide-react'
 import { useVideoSource, type VideoQualityVariants } from './use-video-source'
-import { useSharedVideo } from './use-shared-video'
 import { ProgressBar, type ProgressBarRef } from './progress-bar'
 import { useVideoRegistry } from './viewer/useVideoRegistry'
 import { useRiyilsGestures, type GestureIntent, type GestureZone } from './viewer/useRiyilsGestures'
@@ -83,10 +82,6 @@ function triggerHaptic() {
   if (typeof navigator !== 'undefined' && navigator.vibrate) {
     navigator.vibrate(10)
   }
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max)
 }
 
 function shouldKeepMounted(index: number, activeIndex: number): boolean {
@@ -177,11 +172,7 @@ const RiyilsSlide = React.memo(function RiyilsSlide({
         </div>
       )}
 
-      <fieldset
-        className="react-riyils-viewer__gesture-overlay"
-        onContextMenu={handlers.onContextMenu}
-        tabIndex={-1}
-      >
+      <fieldset className="react-riyils-viewer__gesture-overlay" onContextMenu={handlers.onContextMenu} tabIndex={-1}>
         <button
           type="button"
           className="react-riyils-viewer__gesture-zone left"
@@ -248,6 +239,7 @@ const RiyilsSlide = React.memo(function RiyilsSlide({
         video={video}
         index={index}
         active={active}
+        activeIndex={ui.currentIndex}
         shouldLoad={mounted}
         playback={playback}
         activeAriaLabel={active ? activeAriaLabel : undefined}
@@ -261,6 +253,7 @@ function VideoEl({
   video,
   index,
   active,
+  activeIndex,
   shouldLoad,
   playback,
   activeAriaLabel,
@@ -269,16 +262,45 @@ function VideoEl({
   video: Video
   index: number
   active: boolean
+  activeIndex: number
   shouldLoad: boolean
   playback: PlaybackState
   activeAriaLabel?: string
   handlers: SlideHandlers
 }>) {
   const containerRef = useRef<HTMLDivElement>(null)
-
   const className = `react-riyils-viewer__video ${active ? 'active' : 'react-riyils-viewer__video-buffer'}`
+  const videoRef = useRef<HTMLVideoElement | null>(null)
 
-  const videoRef = useSharedVideo(containerRef, video.id, className, shouldLoad)
+  useEffect(() => {
+    const v = videoRef.current
+    if (!v) return
+    if (!active) {
+      v.pause()
+      v.muted = true
+      v.volume = 0
+    }
+  }, [active])
+
+  useEffect(() => {
+    if (!containerRef.current || !shouldLoad) return
+
+    const videoEl = document.createElement('video')
+    videoEl.className = className
+    videoEl.setAttribute('playsinline', '')
+    videoEl.setAttribute('webkit-playsinline', '')
+    videoEl.dataset.riyilsIndex = String(index)
+    containerRef.current.appendChild(videoEl)
+    videoRef.current = videoEl
+
+    return () => {
+      videoEl.pause()
+      videoEl.removeAttribute('src')
+      videoEl.load()
+      videoEl.remove()
+      videoRef.current = null
+    }
+  }, [video.id, className, shouldLoad, activeIndex, index])
 
   useVideoSource(videoRef, 'viewer', video.id, video.videoUrl, shouldLoad)
 
@@ -286,7 +308,7 @@ function VideoEl({
     if (videoRef.current) {
       handlers.registerVideo(index)(videoRef.current)
     }
-  }, [handlers, index, videoRef.current])
+  }, [handlers, index])
 
   useEffect(() => {
     const v = videoRef.current
@@ -294,6 +316,7 @@ function VideoEl({
 
     v.loop = !playback.enableAutoAdvance
     v.muted = playback.isMuted
+    v.volume = playback.isMuted ? 0 : 1
     if (video.thumbnailUrl) v.poster = video.thumbnailUrl
 
     const onTimeUpdate = handlers.onTimeUpdate
@@ -316,12 +339,9 @@ function VideoEl({
       v.removeEventListener('error', onError)
       v.removeEventListener('contextmenu', onCtx)
     }
-  }, [active, handlers, playback.enableAutoAdvance, playback.isMuted, video.thumbnailUrl, videoRef.current])
+  }, [active, handlers, playback.enableAutoAdvance, playback.isMuted, video.thumbnailUrl])
 
-  const showLoading =
-    active &&
-    !playback.hasError &&
-    (!videoRef.current || videoRef.current.readyState < 2)
+  const showLoading = active && !playback.hasError && (!videoRef.current || videoRef.current.readyState < 2)
 
   return (
     <div className="react-riyils-viewer__video-wrapper">
@@ -352,7 +372,6 @@ function RiyilsViewerInner({
   useLockBodyScroll()
 
   const observer = useRiyilsObserver('viewer')
-
   const t = useMemo(() => ({ ...defaultRiyilsTranslations, ...translations }), [translations])
 
   const [currentIndex, setCurrentIndex] = useState(initialIndex)
@@ -432,16 +451,9 @@ function RiyilsViewerInner({
     [playbackHandlers, playbackState.hasError, togglePlay]
   )
 
-  const { onZoneClick, onStartSpeed, onStopSpeed } = useRiyilsGestures(
-    handleGestureIntent,
-    playbackState.hasError
-  )
+  const { onZoneClick, onStartSpeed, onStopSpeed } = useRiyilsGestures(handleGestureIntent, playbackState.hasError)
 
-  useRiyilsKeyboard(
-    onClose,
-    togglePlay,
-    playbackHandlers.toggleMute
-  )
+  useRiyilsKeyboard(onClose, togglePlay, playbackHandlers.toggleMute)
 
   useEffect(() => {
     const container = containerRef.current
@@ -465,40 +477,65 @@ function RiyilsViewerInner({
     if (v.duration > 0) progressBarRef.current?.update((v.currentTime / v.duration) * 100)
   }, [])
 
-  const handleProgressBarSeek = useCallback((percent: number) => {
-    const v = getVideoEl(currentIndex)
-    const id = getActiveId()
-    if (!v || !id || Number.isNaN(v.duration) || v.duration === Infinity) return
+  const handleProgressBarSeek = useCallback(
+    (percent: number) => {
+      const v = getVideoEl(currentIndex)
+      const id = getActiveId()
+      if (!v || !id || Number.isNaN(v.duration) || v.duration === Infinity) return
 
-    const newTime = (percent / 100) * v.duration
-    v.currentTime = newTime
+      const newTime = (percent / 100) * v.duration
+      v.currentTime = newTime
 
-    progressBarRef.current?.update(percent, true)
+      progressBarRef.current?.update(percent, true)
 
-    if (!playbackState.hasError) {
-      v.play().catch(() => { })
-      if (!playbackState.isPlaying) {
-        playbackHandlers.togglePlay()
+      if (!playbackState.hasError) {
+        v.play().catch(() => { })
+        if (!playbackState.isPlaying) {
+          playbackHandlers.togglePlay()
+        }
       }
-    }
 
-    observer.seek(id, 0, 'gesture')
-  }, [currentIndex, getActiveId, getVideoEl, observer, playbackState, playbackHandlers])
+      observer.seek(id, 0, 'gesture')
+    },
+    [currentIndex, getActiveId, getVideoEl, observer, playbackState.hasError, playbackState.isPlaying, playbackHandlers]
+  )
+
+  const hardStopAllExcept = useCallback((keepIndex: number) => {
+    const root = containerRef.current
+    if (!root) return
+    const els = root.querySelectorAll('video')
+    els.forEach((el) => {
+      const v = el
+      const idx = Number(v.dataset.riyilsIndex)
+      if (!Number.isNaN(idx) && idx === keepIndex) return
+      try {
+        v.pause()
+        v.muted = true
+        v.volume = 0
+      } catch { }
+    })
+  }, [])
 
   const handleSlideChange = useCallback(
     (s: SwiperType) => {
       const nextIndex = s.activeIndex
       setCurrentIndex(nextIndex)
+
+      hardStopAllExcept(nextIndex)
       registry.stopAllExcept(nextIndex)
+
       preloadAround(nextIndex)
       onVideoChange?.(nextIndex)
+
       const nextVideo = getVideoEl(nextIndex)
       if (nextVideo) {
         nextVideo.pause()
         nextVideo.currentTime = 0
+        nextVideo.muted = playbackState.isMuted
+        nextVideo.volume = playbackState.isMuted ? 0 : 1
       }
     },
-    [getVideoEl, onVideoChange, preloadAround, registry]
+    [getVideoEl, hardStopAllExcept, onVideoChange, preloadAround, registry, playbackState.isMuted]
   )
 
   const stateRef = useRef({
@@ -506,7 +543,7 @@ function RiyilsViewerInner({
     videos,
     enableAutoAdvance,
     playbackHandlers,
-    registry
+    registry,
   })
 
   useEffect(() => {
@@ -515,7 +552,7 @@ function RiyilsViewerInner({
       videos,
       enableAutoAdvance,
       playbackHandlers,
-      registry
+      registry,
     }
   })
 
@@ -583,11 +620,7 @@ function RiyilsViewerInner({
   return (
     <div ref={containerRef} className="react-riyils-viewer">
       <div className="react-riyils-viewer__gradient-top" />
-      <ProgressBar
-        ref={progressBarRef}
-        color={progressBarColor}
-        onSeek={handleProgressBarSeek}
-      />
+      <ProgressBar ref={progressBarRef} color={progressBarColor} onSeek={handleProgressBarSeek} />
       <div className="react-riyils-viewer__close-container">
         <button
           type="button"
@@ -610,9 +643,9 @@ function RiyilsViewerInner({
         speed={500}
         mousewheel={{
           enabled: true,
-          eventsTarget: ".react-riyils-viewer",
+          eventsTarget: '.react-riyils-viewer',
           thresholdDelta: 20,
-          forceToAxis: true
+          forceToAxis: true,
         }}
         virtual={{ enabled: true, addSlidesBefore: 1, addSlidesAfter: 2 }}
         style={{ height: '100%', width: '100%' }}
