@@ -69,6 +69,12 @@ export const defaultRiyilsTranslations: RiyilsTranslations = {
     less: 'less',
 }
 
+export interface AdConfig {
+    interval?: number
+    shouldInject?: (index: number) => boolean
+    getAd: (index: number) => Video
+}
+
 export interface RiyilsViewerProps {
     readonly videos: Video[]
     readonly initialIndex?: number
@@ -78,6 +84,7 @@ export interface RiyilsViewerProps {
     readonly progressBarColor?: string
     readonly enableAutoAdvance?: boolean
     readonly controls?: RiyilsViewerControl[]
+    readonly adConfig?: AdConfig
 }
 
 export interface RiyilsViewerControlContext {
@@ -145,9 +152,34 @@ function RiyilsViewerInner({
     progressBarColor = '#fff',
     enableAutoAdvance = false,
     controls,
+    adConfig,
 }: RiyilsViewerProps) {
     const observer = useRiyilsObserver('viewer')
     const t = useMemo(() => ({ ...defaultRiyilsTranslations, ...translations }), [translations])
+
+    const finalVideos = useMemo(() => {
+        if (!adConfig) return videos
+        const result: Video[] = []
+        let originalIndex = 0
+
+        for (const video of videos) {
+            result.push(video)
+            originalIndex++
+
+            let shouldInject = false
+            if (adConfig.shouldInject) {
+                shouldInject = adConfig.shouldInject(originalIndex)
+            } else if (adConfig.interval && adConfig.interval > 0) {
+                shouldInject = originalIndex % adConfig.interval === 0
+            }
+
+            if (shouldInject) {
+                const ad = adConfig.getAd(originalIndex)
+                result.push(ad)
+            }
+        }
+        return result
+    }, [videos, adConfig])
 
     const [currentIndex, setCurrentIndex] = useState(initialIndex)
     const [seekFeedback, setSeekFeedback] = useState<SeekFeedback>(null)
@@ -173,9 +205,9 @@ function RiyilsViewerInner({
     const registry = useVideoRegistry()
 
     const getVideoEl = useCallback((index: number) => registry.get(index), [registry])
-    const getActiveId = useCallback(() => videos[currentIndex]?.id, [videos, currentIndex])
+    const getActiveId = useCallback(() => finalVideos[currentIndex]?.id, [finalVideos, currentIndex])
 
-    const { preloadAround } = useRiyilsPreload(videos, currentIndex, initialIndex)
+    const { preloadAround } = useRiyilsPreload(finalVideos, currentIndex, initialIndex)
 
     const { playbackState, playbackHandlers } = useRiyilsPlayback(
         getVideoEl,
@@ -208,7 +240,7 @@ function RiyilsViewerInner({
             active: ({ isMuted }) => !isMuted,
             className: 'react-riyils-viewer__btn-mute',
         },
-    ], [playbackState.isMuted, t])
+    ], [playbackState.isMuted, t, isPipActive])
 
     const mergedControls = useMemo<RiyilsViewerControl[]>(() => {
         if (!controls || controls.length === 0) return defaultControls
@@ -303,11 +335,11 @@ function RiyilsViewerInner({
 
         preloadAround(nextIndex)
         onVideoChange?.(nextIndex)
-    }, 100), [onVideoChange, preloadAround, registry])
+    }, 100), [onVideoChange, preloadAround, registry, finalVideos])
 
     const stateRef = useRef({
         currentIndex,
-        videos,
+        videos: finalVideos,
         enableAutoAdvance,
         playbackHandlers,
         registry,
@@ -316,7 +348,7 @@ function RiyilsViewerInner({
     useEffect(() => {
         stateRef.current = {
             currentIndex,
-            videos,
+            videos: finalVideos,
             enableAutoAdvance,
             playbackHandlers,
             registry,
@@ -359,11 +391,11 @@ function RiyilsViewerInner({
     )
 
     const activeAriaLabel = useMemo(() => {
-        const v = videos[currentIndex]
+        const v = finalVideos[currentIndex]
         const id = v?.id ?? ''
         const caption = v?.caption ? `. ${v.caption}` : ''
         return `${t.videoPlayer} - ${id}${caption}`
-    }, [currentIndex, videos, t.videoPlayer])
+    }, [currentIndex, finalVideos, t.videoPlayer])
 
     const uiState: SlideUIState = useMemo(
         () => ({
@@ -390,8 +422,8 @@ function RiyilsViewerInner({
                 ref={progressBarRef}
                 color={progressBarColor}
                 onSeek={handleProgressBarSeek}
-                videoUrl={videos[currentIndex]?.videoUrl}
-                videoId={videos[currentIndex]?.id}
+                videoUrl={finalVideos[currentIndex]?.videoUrl}
+                videoId={finalVideos[currentIndex]?.id}
             />
             <div className="react-riyils-viewer__close-container">
                 <button
@@ -434,7 +466,7 @@ function RiyilsViewerInner({
                 virtual={{ enabled: true, addSlidesBefore: 1, addSlidesAfter: 2 }}
                 style={{ height: '100%', width: '100%' }}
             >
-                {videos.map((video, index) => (
+                {finalVideos.map((video, index) => (
                     <SwiperSlide key={video.id} virtualIndex={index} className="react-riyils-viewer__slide">
                         <RiyilsSlide
                             video={video}
@@ -490,7 +522,7 @@ function RiyilsViewerInner({
                         .filter((c) => {
                             if (typeof c.visible === 'function') return c.visible({
                                 currentIndex,
-                                video: videos[currentIndex],
+                                video: finalVideos[currentIndex],
                                 isMuted: playbackState.isMuted,
                                 isPlaying: playbackState.isPlaying,
                                 togglePlay,
@@ -501,7 +533,7 @@ function RiyilsViewerInner({
                         .map((c) => {
                             const ctx: RiyilsViewerControlContext = {
                                 currentIndex,
-                                video: videos[currentIndex],
+                                video: finalVideos[currentIndex],
                                 isMuted: playbackState.isMuted,
                                 isPlaying: playbackState.isPlaying,
                                 togglePlay,

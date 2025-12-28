@@ -313,28 +313,27 @@ class VideoSourceManager {
         }
     }
 
-    attach(video: HTMLVideoElement, key: string, src?: string | VideoQualityVariants): void {
-        void this.ensureEntry(key, src).then((entry) => {
-            if (!entry) return
+    async attach(video: HTMLVideoElement, key: string, src?: string | VideoQualityVariants): Promise<void> {
+        const entry = await this.ensureEntry(key, src)
+        if (!entry) return
 
-            entry.refCount += 1
+        entry.refCount += 1
 
-            if (video.poster) {
-                try {
-                    video.load()
-                } catch { }
-            }
+        if (video.poster) {
+            try {
+                video.load()
+            } catch { }
+        }
 
-            if (entry.hls) {
-                entry.hls.attachMedia(video)
-                return
-            }
+        if (entry.hls) {
+            entry.hls.attachMedia(video)
+            return
+        }
 
-            const activeSrc = entry.blobUrl || entry.url
-            if (video.src !== activeSrc) {
-                video.src = activeSrc
-            }
-        })
+        const activeSrc = entry.blobUrl || entry.url
+        if (video.src !== activeSrc) {
+            video.src = activeSrc
+        }
     }
 
     detach(key: string, video?: HTMLVideoElement, scope?: VideoSourceScope): void {

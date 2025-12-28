@@ -2,6 +2,12 @@ import { renderHook } from '@testing-library/react';
 import { useVideoSource, playDeterministic, videoSourceManager, detachMedia } from '../src/use-video-source';
 import Hls from 'hls.js';
 
+jest.mock('../src/utils/video-cache', () => ({
+    cacheVideo: jest.fn(),
+    getCachedVideoUrl: jest.fn().mockResolvedValue(null),
+    cleanupCache: jest.fn()
+}));
+
 jest.mock('hls.js', () => {
     return jest.fn().mockImplementation(() => ({
         loadSource: jest.fn(),
@@ -70,11 +76,13 @@ describe('use-video-source', () => {
             expect(Hls).toHaveBeenCalled();
         });
 
-        it('should use native for non-hls urls', () => {
+        // ...
+
+        it('should use native for non-hls urls', async () => {
             const video = document.createElement('video');
             // @ts-ignore
             Hls.mockClear();
-            videoSourceManager.attach(video, 'test-native', 'http://example.com/video.mp4');
+            await videoSourceManager.attach(video, 'test-native', 'http://example.com/video.mp4');
             expect(Hls).not.toHaveBeenCalled();
             expect(video.src).toBe('http://example.com/video.mp4');
         });

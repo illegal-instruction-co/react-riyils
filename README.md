@@ -10,7 +10,8 @@ React Riyils handles browser autoplay policies, resource management, and mobile 
 
 - [**Quick Start & Setup**](./docs/setup.md) - Installation, CSS imports, and the mandatory Playback Provider.
 - [**Components Reference**](./docs/components.md) - Detailed props and types for `RiyilsViewer`, `RiyilsCarousel`, and `RiyilsExplore`.
-- [**Interaction & Gestures**](./docs/interaction.md) - Mobile gestures, keyboard shortcuts, and haptic feedback.
+- [**Interaction & Gestures**](./docs/interaction.md) - [Monetization / Ad Injection](docs/monetization.md)
+- [Keyboard Shortcuts](docs/keyboard-shortcuts.md), and haptic feedback.
 - [**Observability & Analytics**](./docs/observability.md) - Telemetry infrastructure, log levels, and custom instrumentation.
 
 ---
