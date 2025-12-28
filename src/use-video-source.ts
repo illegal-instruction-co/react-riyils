@@ -399,12 +399,16 @@ export function useVideoSource(
         const video = videoRef.current
         if (!video || !shouldLoad) return
 
-        videoSourceManager.attach(video, key, src)
-
-        return () => {
-            if (video) {
+        let isMounted = true
+        videoSourceManager.attach(video, key, src).then(() => {
+            if (!isMounted) {
                 videoSourceManager.detach(key, video, scope)
             }
+        })
+
+        return () => {
+            isMounted = false
+            videoSourceManager.detach(key, video, scope)
         }
     }, [key, scope, shouldLoad, src, videoRef])
 

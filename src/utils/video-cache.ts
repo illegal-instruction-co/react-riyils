@@ -23,6 +23,10 @@ export async function getCachedVideoUrl(url: string): Promise<string | null> {
         const response = await cache.match(url)
         if (response) {
             const blob = await response.blob()
+            if (!blob.type || blob.type === 'application/octet-stream') {
+                const newBlob = blob.slice(0, blob.size, 'video/mp4')
+                return URL.createObjectURL(newBlob)
+            }
             return URL.createObjectURL(blob)
         }
     } catch { }
