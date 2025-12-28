@@ -21,7 +21,7 @@ describe('useSharedVideo', () => {
 
         renderHook(() => useSharedVideo(containerRef, 'vid-1', 'class-1', true));
 
-        expect(VideoElementPool.move).toHaveBeenCalledWith('vid-1', container, 'class-1');
+        expect(VideoElementPool.move).toHaveBeenCalledWith('vid-1', container, 'class-1', undefined);
     });
 
     it('should not move video when shouldLoad is false', () => {
