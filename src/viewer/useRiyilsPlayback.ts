@@ -252,8 +252,7 @@ export function useRiyilsPlayback(
         playbackController.setMuted(next)
         setIsMuted(next)
         if (id) observer.mute(id, next, 'user')
-        void applyPlayback()
-    }, 200), [applyPlayback, getActiveId, observer, playbackController])
+    }, 200), [getActiveId, observer, playbackController])
 
     const seek = useCallback(
         (deltaSeconds: number, method: 'gesture' | 'keyboard') => {

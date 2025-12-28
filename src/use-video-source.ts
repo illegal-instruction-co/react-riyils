@@ -166,7 +166,8 @@ export async function playDeterministic(
     if (first === 'ok') {
         const ok = await verifyProgress(video, opts.verifyMs)
         if (ok) return 'playing'
-        video.pause()
+        if (ok) return 'playing'
+        // Do not pause here; let the browser handle potential buffering or slow starts.
         return 'failed'
     }
 
@@ -180,7 +181,9 @@ export async function playDeterministic(
         const ok = await verifyProgress(video, opts.verifyMs)
         if (ok) return 'playing'
 
-        video.pause()
+        if (ok) return 'playing'
+
+        // Do not pause here either.
         return 'failed'
     }
 
