@@ -1,4 +1,4 @@
-import React, { useImperativeHandle, forwardRef, useRef, useCallback, useState, useMemo } from 'react'
+import React, { useImperativeHandle, forwardRef, useRef, useCallback, useMemo } from 'react'
 import { useVideoSource, type VideoQualityVariants } from '../use-video-source'
 import { throttle } from '../utils'
 
@@ -15,18 +15,18 @@ interface ProgressBarProps {
 
 export const ProgressBar = forwardRef<ProgressBarRef, ProgressBarProps>(({ color = '#fff', onSeek, videoUrl, videoId }, ref) => {
     const inputRef = useRef<HTMLInputElement>(null)
+    const previewContainerRef = useRef<HTMLDivElement>(null)
     const previewVideoRef = useRef<HTMLVideoElement>(null)
-    const [hoverPercent, setHoverPercent] = useState<number | null>(null)
-    const [hoverPos, setHoverPos] = useState<number>(0)
-    const [previewTime, setPreviewTime] = useState<string>('00:00')
+    const previewTimeRef = useRef<HTMLDivElement>(null)
 
-    useVideoSource(previewVideoRef, 'viewer', `preview-${videoId || 'unknown'}`, videoUrl, hoverPercent !== null)
+    useVideoSource(previewVideoRef, 'viewer', `preview-${videoId || 'unknown'}`, videoUrl, true)
 
     useImperativeHandle(ref, () => ({
         update: (percent: number, force = false) => {
             const el = inputRef.current
             if (!el) return
-            el.value = percent.toString()
+            const val = percent.toString()
+            if (el.value !== val) el.value = val
             el.style.setProperty('--progress-width', `${percent}%`)
         },
     }))
@@ -41,8 +41,11 @@ export const ProgressBar = forwardRef<ProgressBarRef, ProgressBarProps>(({ color
         const rect = e.currentTarget.getBoundingClientRect()
         const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width))
         const percent = (x / rect.width) * 100
-        setHoverPercent(percent)
-        setHoverPos(x)
+
+        if (previewContainerRef.current) {
+            previewContainerRef.current.style.display = 'flex'
+            previewContainerRef.current.style.transform = `translateX(${x}px) translateX(-50%)`
+        }
 
         const v = previewVideoRef.current
         if (v && Number.isFinite(v.duration)) {
@@ -54,14 +57,17 @@ export const ProgressBar = forwardRef<ProgressBarRef, ProgressBarProps>(({ color
                 } else {
                     v.currentTime = time
                 }
-                setPreviewTime(formatTime(time))
+                if (previewTimeRef.current) {
+                    previewTimeRef.current.textContent = formatTime(time)
+                }
             }
         }
     }, [])
 
-
     const handleMouseLeave = useCallback(() => {
-        setHoverPercent(null)
+        if (previewContainerRef.current) {
+            previewContainerRef.current.style.display = 'none'
+        }
     }, [])
 
     const throttledSeek = useMemo(() => throttle((val: number) => {
@@ -90,23 +96,22 @@ export const ProgressBar = forwardRef<ProgressBarRef, ProgressBarProps>(({ color
                 minWidth: 0
             }}
         >
-            {hoverPercent !== null && (
-                <div
-                    className="react-riyils-viewer__progress-preview"
-                    style={{ left: hoverPos }}
-                >
-                    <video
-                        ref={previewVideoRef}
-                        className="react-riyils-viewer__preview-video"
-                        muted
-                        playsInline
-                        preload="metadata"
-                    />
-                    <div className="react-riyils-viewer__preview-time">
-                        {previewTime}
-                    </div>
+            <div
+                ref={previewContainerRef}
+                className="react-riyils-viewer__progress-preview"
+                style={{ display: 'none', left: 0, transform: 'translateX(-50%)' }}
+            >
+                <video
+                    ref={previewVideoRef}
+                    className="react-riyils-viewer__preview-video"
+                    muted
+                    playsInline
+                    preload="metadata"
+                />
+                <div ref={previewTimeRef} className="react-riyils-viewer__preview-time">
+                    0:00
                 </div>
-            )}
+            </div>
             <input
                 ref={inputRef}
                 type="range"
