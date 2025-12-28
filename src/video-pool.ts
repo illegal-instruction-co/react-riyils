@@ -7,6 +7,7 @@ export const VideoElementPool = {
             video.setAttribute('playsinline', '')
             video.setAttribute('webkit-playsinline', '')
             video.preload = 'metadata'
+            video.setAttribute('muted', '')
             video.muted = true
             video.loop = true
             videoPool.set(id, video)

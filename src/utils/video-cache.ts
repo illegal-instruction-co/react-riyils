@@ -9,7 +9,8 @@ function isMobile(): boolean {
 }
 
 export async function cacheVideo(url: string): Promise<void> {
-    if (isMobile()) return
+    const nav = navigator as any
+    if (nav.connection?.saveData) return
 
     try {
         const cache = await caches.open(CACHE_NAME)
@@ -25,7 +26,8 @@ export async function cacheVideo(url: string): Promise<void> {
 }
 
 export async function getCachedVideoUrl(url: string): Promise<string | null> {
-    if (isMobile()) return null
+    const nav = navigator as any
+    if (nav.connection?.saveData) return null
 
     try {
         const cache = await caches.open(CACHE_NAME)
@@ -43,13 +45,12 @@ export async function getCachedVideoUrl(url: string): Promise<string | null> {
 }
 
 export async function cleanupCache(): Promise<void> {
-    if (isMobile()) return
-
     try {
         const cache = await caches.open(CACHE_NAME)
         const keys = await cache.keys()
-        if (keys.length > 50) {
-            for (let i = 0; i < keys.length - 50; i++) {
+        const limit = isMobile() ? 10 : 50
+        if (keys.length > limit) {
+            for (let i = 0; i < keys.length - limit; i++) {
                 await cache.delete(keys[i])
             }
         }

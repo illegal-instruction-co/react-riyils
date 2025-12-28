@@ -47,6 +47,8 @@ export function VideoEl({
         videoEl.setAttribute('webkit-playsinline', '')
         videoEl.dataset.riyilsIndex = String(index)
         videoEl.preload = 'metadata'
+        videoEl.muted = true
+        videoEl.setAttribute('muted', '')
 
         if (video.thumbnailUrl) {
             videoEl.poster = video.thumbnailUrl
