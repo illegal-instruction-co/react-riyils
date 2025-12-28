@@ -187,6 +187,8 @@ export async function playDeterministic(
     return 'failed'
 }
 
+import { getCachedVideoUrl, cacheVideo } from './utils/video-cache'
+
 export function detachMedia(video: HTMLVideoElement): void {
     try {
         video.pause()
@@ -199,6 +201,7 @@ type Entry = {
     url: string
     hls: Hls | null
     refCount: number
+    blobUrl?: string
 }
 
 const CACHE_LIMIT = 20
@@ -207,12 +210,36 @@ const DISPOSE_DELAY_MS = 60000
 class VideoSourceManager {
     private readonly cache = new Map<string, Entry>()
     private readonly disposeTimeouts = new Map<string, number>()
+    private readonly networkListener: (() => void) | null = null
+
+    constructor() {
+        if (globalThis.window !== undefined && 'connection' in navigator) {
+            const nav = navigator as any
+            this.networkListener = () => {
+                this.updateHlsConfigs()
+            }
+            if (nav.connection) {
+                nav.connection.addEventListener('change', this.networkListener)
+            }
+        }
+    }
+
+    private updateHlsConfigs() {
+        const config = getHlsConfig()
+        this.cache.forEach((entry) => {
+            if (entry.hls) {
+                entry.hls.config.maxBufferLength = config.maxBufferLength as number
+                entry.hls.config.maxMaxBufferLength = config.maxMaxBufferLength as number
+            }
+        })
+    }
 
     private cleanupCacheIfNeeded() {
         if (this.cache.size >= CACHE_LIMIT) {
             for (const [oldKey, entry] of this.cache) {
                 if (entry.refCount === 0 && !this.disposeTimeouts.has(oldKey)) {
                     entry.hls?.destroy()
+                    if (entry.blobUrl) URL.revokeObjectURL(entry.blobUrl)
                     this.cache.delete(oldKey)
                     if (this.cache.size < CACHE_LIMIT) break
                 }
@@ -227,7 +254,7 @@ class VideoSourceManager {
         }
     }
 
-    private ensureEntry(key: string, src?: string | VideoQualityVariants): Entry | null {
+    private async ensureEntry(key: string, src?: string | VideoQualityVariants): Promise<Entry | null> {
         if (!src) return null
 
         const url = resolveFinalUrl(src)
@@ -242,57 +269,72 @@ class VideoSourceManager {
 
         if (existing) {
             existing.hls?.destroy()
+            if (existing.blobUrl) URL.revokeObjectURL(existing.blobUrl)
             this.cache.delete(key)
         }
 
         this.cleanupCacheIfNeeded()
 
         let hls: Hls | null = null
+        let blobUrl: string | undefined
+
         if (isHlsUrl(url) && Hls.isSupported()) {
             hls = new Hls(getHlsConfig())
             hls.loadSource(url)
+        } else {
+            const cached = await getCachedVideoUrl(url)
+            blobUrl = cached ?? undefined
         }
 
-        const entry: Entry = { url, hls, refCount: 0 }
+        const entry: Entry = { url, hls, refCount: 0, blobUrl }
         this.cache.set(key, entry)
         return entry
     }
 
     preload(key: string, src?: string | VideoQualityVariants): void {
-        const entry = this.ensureEntry(key, src)
-        if (entry) {
-            this.cancelPendingDispose(key)
-            const timeoutId = globalThis.window.setTimeout(() => {
-                if (entry.refCount === 0) {
-                    entry.hls?.destroy()
-                    this.cache.delete(key)
-                }
-                this.disposeTimeouts.delete(key)
-            }, DISPOSE_DELAY_MS)
-            this.disposeTimeouts.set(key, timeoutId)
+        void this.ensureEntry(key, src).then((entry) => {
+            if (entry) {
+                this.cancelPendingDispose(key)
+                const timeoutId = globalThis.window.setTimeout(() => {
+                    if (entry.refCount === 0) {
+                        entry.hls?.destroy()
+                        if (entry.blobUrl) URL.revokeObjectURL(entry.blobUrl)
+                        this.cache.delete(key)
+                    }
+                    this.disposeTimeouts.delete(key)
+                }, DISPOSE_DELAY_MS)
+                this.disposeTimeouts.set(key, timeoutId)
+            }
+        })
+
+        const url = resolveFinalUrl(src)
+        if (url && !isHlsUrl(url)) {
+            void cacheVideo(url)
         }
     }
 
     attach(video: HTMLVideoElement, key: string, src?: string | VideoQualityVariants): void {
-        const entry = this.ensureEntry(key, src)
-        if (!entry) return
+        void this.ensureEntry(key, src).then((entry) => {
+            if (!entry) return
 
-        entry.refCount += 1
+            entry.refCount += 1
 
-        if (video.poster) {
-            try {
-                video.load()
-            } catch { }
-        }
+            if (video.poster) {
+                try {
+                    video.load()
+                } catch { }
+            }
 
-        if (entry.hls) {
-            entry.hls.attachMedia(video)
-            return
-        }
+            if (entry.hls) {
+                entry.hls.attachMedia(video)
+                return
+            }
 
-        if (video.src !== entry.url) {
-            video.src = entry.url
-        }
+            const activeSrc = entry.blobUrl || entry.url
+            if (video.src !== activeSrc) {
+                video.src = activeSrc
+            }
+        })
     }
 
     detach(key: string, video?: HTMLVideoElement, scope?: VideoSourceScope): void {
@@ -310,6 +352,7 @@ class VideoSourceManager {
                     const currentEntry = this.cache.get(key)
                     if (currentEntry && currentEntry.refCount <= 0) {
                         currentEntry.hls?.destroy()
+                        if (currentEntry.blobUrl) URL.revokeObjectURL(currentEntry.blobUrl)
                         this.cache.delete(key)
                     }
                 }
@@ -328,6 +371,7 @@ class VideoSourceManager {
         if (!entry) return
 
         entry.hls?.destroy()
+        if (entry.blobUrl) URL.revokeObjectURL(entry.blobUrl)
         this.cache.delete(key)
     }
 }

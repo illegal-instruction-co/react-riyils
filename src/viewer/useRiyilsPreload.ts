@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef } from 'react'
-
+import { useEffect } from 'react'
+import { preloadVideoSource } from '../use-video-source'
 import type { Video } from './RiyilsViewer'
 
 export function useRiyilsPreload(
@@ -7,57 +7,18 @@ export function useRiyilsPreload(
     currentIndex: number,
     initialIndex: number
 ) {
-    const preloadedRef = useRef<Set<string>>(new Set())
-
-    const safePreload = useCallback(
-        (video?: Video) => {
-            if (!video) return
-            if (preloadedRef.current.has(video.id)) return
-            preloadedRef.current.add(video.id)
-            if (!video.videoUrl) return
-
-            const url = typeof video.videoUrl === 'string'
-                ? video.videoUrl
-                : (video.videoUrl.high || video.videoUrl.mid || video.videoUrl.low)
-
-            if (!url) return
-
-            fetch(url, { method: 'HEAD', mode: 'no-cors' }).catch(() => { })
-        },
-        []
-    )
-
-    const preloadAround = useCallback(
-        (index: number) => {
-            if (!videos || index < 0 || index >= videos.length) return
-
-            const cur = videos[index]
-            if (cur) safePreload(cur)
-
-            const prev = videos[index - 1]
-            if (prev) safePreload(prev)
-
-            const next = videos[index + 1]
-            if (next) safePreload(next)
-
-            const prev2 = videos[index - 2]
-            if (prev2) safePreload(prev2)
-
-            const next2 = videos[index + 2]
-            if (next2) safePreload(next2)
-        },
-        [videos, safePreload]
-    )
-
     useEffect(() => {
-        preloadAround(initialIndex)
-    }, [initialIndex, preloadAround])
+        const indexes = [currentIndex, currentIndex + 1, currentIndex + 2]
 
-    useEffect(() => {
-        preloadAround(currentIndex)
-    }, [currentIndex, preloadAround])
+        indexes.forEach(idx => {
+            const v = videos[idx]
+            if (v?.videoUrl) {
+                preloadVideoSource('viewer', v.id, v.videoUrl)
+            }
+        })
+    }, [currentIndex, videos])
 
     return {
-        preloadAround,
+        preloadAround: (_i: number) => { }
     }
 }
