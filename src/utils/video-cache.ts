@@ -11,6 +11,7 @@ function isMobile(): boolean {
 export async function cacheVideo(url: string): Promise<void> {
     const nav = navigator as any
     if (nav.connection?.saveData) return
+    if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) return
 
     try {
         const cache = await caches.open(CACHE_NAME)
@@ -28,6 +29,7 @@ export async function cacheVideo(url: string): Promise<void> {
 export async function getCachedVideoUrl(url: string): Promise<string | null> {
     const nav = navigator as any
     if (nav.connection?.saveData) return null
+    if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) return null
 
     try {
         const cache = await caches.open(CACHE_NAME)
