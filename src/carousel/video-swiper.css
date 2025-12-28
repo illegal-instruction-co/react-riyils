@@ -297,6 +297,7 @@
 }
 
 .react-riyils-viewer {
+  outline: none;
   position: fixed;
   inset: 0;
   z-index: var(--z-modal);
@@ -507,6 +508,7 @@
   color: rgba(255, 255, 255, 0.9);
   transition: background-color 0.2s ease, transform 0.2s ease;
   pointer-events: auto;
+  outline: none;
 }
 
 .react-riyils-viewer__btn:hover {
@@ -560,9 +562,9 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: rgba(255, 255, 255, 0.12);
+  background: transparent;
   opacity: 0;
-  transition: opacity 0.1s linear;
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   pointer-events: none;
 }
 
@@ -572,17 +574,15 @@
 }
 
 .react-riyils-viewer__gesture-zone.left::after {
-  -webkit-mask-image: linear-gradient(to right, black 75%, transparent 100%);
-  mask-image: linear-gradient(to right, black 75%, transparent 100%);
+  background: radial-gradient(circle at left center, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
 }
 
 .react-riyils-viewer__gesture-zone.center::after {
-  background: transparent;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
 }
 
 .react-riyils-viewer__gesture-zone.right::after {
-  -webkit-mask-image: linear-gradient(to left, black 75%, transparent 100%);
-  mask-image: linear-gradient(to left, black 75%, transparent 100%);
+  background: radial-gradient(circle at right center, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
 }
 
 .react-riyils-viewer__feedback-center {
@@ -647,8 +647,9 @@
   -webkit-backdrop-filter: blur(8px);
   padding: 8px 16px;
   border-radius: 20px;
-  border: 1px solid var(--rr-glass-border);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   display: flex;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   align-items: center;
   gap: 6px;
   color: var(--rr-text);
