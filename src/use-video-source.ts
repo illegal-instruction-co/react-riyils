@@ -201,8 +201,8 @@ type Entry = {
     refCount: number
 }
 
-const CACHE_LIMIT = 50
-const DISPOSE_DELAY_MS = 30000
+const CACHE_LIMIT = 20
+const DISPOSE_DELAY_MS = 60000
 
 class VideoSourceManager {
     private readonly cache = new Map<string, Entry>()

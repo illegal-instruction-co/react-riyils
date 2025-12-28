@@ -147,10 +147,6 @@ export function useRiyilsPlayback(
     }, [currentIndex])
 
     useEffect(() => {
-        void applyPlayback()
-    }, [applyPlayback])
-
-    useEffect(() => {
         activeTokenRef.current++
         setHasStarted(false)
     }, [currentIndex])
@@ -158,6 +154,10 @@ export function useRiyilsPlayback(
     useEffect(() => {
         activeIdRef.current = getActiveId()
     }, [currentIndex, getActiveId])
+
+    useEffect(() => {
+        void applyPlayback()
+    }, [applyPlayback])
 
     useEffect(() => {
         const v = getVideoEl(currentIndex)
@@ -195,16 +195,24 @@ export function useRiyilsPlayback(
             }
         }
 
+        const onCanPlay = () => {
+            if (mountedRef.current && token === activeTokenRef.current) {
+                void applyPlayback()
+            }
+        }
+
         v.addEventListener('loadeddata', markStarted)
         v.addEventListener('playing', markStarted)
         v.addEventListener('waiting', markLoading)
         v.addEventListener('stalled', markLoading)
+        v.addEventListener('canplay', onCanPlay)
 
         return () => {
             v.removeEventListener('loadeddata', markStarted)
             v.removeEventListener('playing', markStarted)
             v.removeEventListener('waiting', markLoading)
             v.removeEventListener('stalled', markLoading)
+            v.removeEventListener('canplay', onCanPlay)
             if (waitingTimeoutRef.current) {
                 clearTimeout(waitingTimeoutRef.current)
                 waitingTimeoutRef.current = null
@@ -214,7 +222,7 @@ export function useRiyilsPlayback(
                 stallTimeoutRef.current = null
             }
         }
-    }, [currentIndex, getVideoEl, getActiveId, observer, onRetry])
+    }, [currentIndex, getVideoEl, getActiveId, observer, onRetry, applyPlayback])
 
     useEffect(() => {
         const id = getActiveId()

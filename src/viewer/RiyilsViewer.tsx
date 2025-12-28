@@ -359,8 +359,10 @@ function RiyilsViewerInner({
     )
 
     const activeAriaLabel = useMemo(() => {
-        const id = videos[currentIndex]?.id ?? ''
-        return `${t.videoPlayer} - ${id}`
+        const v = videos[currentIndex]
+        const id = v?.id ?? ''
+        const caption = v?.caption ? `. ${v.caption}` : ''
+        return `${t.videoPlayer} - ${id}${caption}`
     }, [currentIndex, videos, t.videoPlayer])
 
     const uiState: SlideUIState = useMemo(

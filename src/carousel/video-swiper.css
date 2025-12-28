@@ -1,6 +1,6 @@
 :root {
-  --rr-slide-w-mob: 55vw;
-  --rr-slide-h-mob: 60vh;
+  --rr-slide-w-mob: 75vw;
+  --rr-slide-h-mob: 70vh;
   --rr-slide-w-desk: 60vw;
   --rr-slide-h-desk: 540px;
   --rr-primary: #3b82f6;
@@ -21,6 +21,72 @@
   --z-ui: 30;
   --z-overlay: 40;
   --z-modal: 99999;
+}
+
+@keyframes rr-swipe-hint {
+  0% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+
+  20% {
+    opacity: 1;
+  }
+
+  50% {
+    transform: translateX(-40px);
+    opacity: 1;
+  }
+
+  80% {
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+}
+
+.react-riyils__swipe-hint {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: var(--z-overlay);
+  pointer-events: none;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  transform: translate(-50%, -50%);
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  animation: rr-fade-out 0.5s ease forwards;
+  animation-delay: 4s;
+}
+
+.react-riyils__swipe-hint.visible {
+  display: flex;
+}
+
+.react-riyils__swipe-hand {
+  width: 48px;
+  height: 48px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  animation: rr-swipe-hint 2s infinite ease-in-out;
+}
+
+@media (min-width: 768px) {
+  .react-riyils__swipe-hint {
+    display: none !important;
+  }
 }
 
 .react-riyils__container {
