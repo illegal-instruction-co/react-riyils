@@ -311,7 +311,7 @@ function RiyilsViewerInner({
 
     const handleTimeUpdate = useCallback((e: Event) => {
         const v = e.target as HTMLVideoElement
-        if (v.duration > 0) progressBarRef.current?.update((v.currentTime / v.duration) * 100)
+        if (v.duration > 0) progressBarRef.current?.update((v.currentTime / v.duration) * 100, v.currentTime, v.duration)
     }, [])
 
     const handleProgressBarSeek = useCallback(
@@ -463,7 +463,7 @@ function RiyilsViewerInner({
                     thresholdDelta: 15,
                     forceToAxis: true,
                 }}
-                virtual={{ enabled: true, addSlidesBefore: 1, addSlidesAfter: 2 }}
+                virtual={{ enabled: true, addSlidesBefore: 1, addSlidesAfter: 1 }}
                 style={{ height: '100%', width: '100%' }}
             >
                 {finalVideos.map((video, index) => (

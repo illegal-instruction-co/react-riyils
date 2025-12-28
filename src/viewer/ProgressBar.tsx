@@ -1,9 +1,9 @@
-import React, { useImperativeHandle, forwardRef, useRef, useCallback, useMemo } from 'react'
+import React, { useImperativeHandle, forwardRef, useRef, useCallback, useMemo, useEffect } from 'react'
 import { useVideoSource, type VideoQualityVariants } from '../use-video-source'
 import { throttle } from '../utils'
 
 export interface ProgressBarRef {
-    update: (percent: number, force?: boolean) => void
+    update: (percent: number, currentTime?: number, duration?: number) => void
 }
 
 interface ProgressBarProps {
@@ -18,18 +18,9 @@ export const ProgressBar = forwardRef<ProgressBarRef, ProgressBarProps>(({ color
     const previewContainerRef = useRef<HTMLDivElement>(null)
     const previewVideoRef = useRef<HTMLVideoElement>(null)
     const previewTimeRef = useRef<HTMLDivElement>(null)
+    const timeDisplayRef = useRef<HTMLDivElement>(null)
 
     useVideoSource(previewVideoRef, 'viewer', `preview-${videoId || 'unknown'}`, videoUrl, true)
-
-    useImperativeHandle(ref, () => ({
-        update: (percent: number, force = false) => {
-            const el = inputRef.current
-            if (!el) return
-            const val = percent.toString()
-            if (el.value !== val) el.value = val
-            el.style.setProperty('--progress-width', `${percent}%`)
-        },
-    }))
 
     const formatTime = (seconds: number) => {
         const m = Math.floor(seconds / 60)
@@ -37,8 +28,42 @@ export const ProgressBar = forwardRef<ProgressBarRef, ProgressBarProps>(({ color
         return `${m}:${s.toString().padStart(2, '0')}`
     }
 
+    useImperativeHandle(ref, () => ({
+        update: (percent: number, currentTime?: number, duration?: number) => {
+            const el = inputRef.current
+            if (!el) return
+            const val = percent.toString()
+            if (el.value !== val) el.value = val
+            el.style.setProperty('--progress-width', `${percent}%`)
+
+            if (timeDisplayRef.current && currentTime !== undefined && duration !== undefined) {
+                timeDisplayRef.current.textContent = `${formatTime(currentTime)} / ${formatTime(duration)}`
+            }
+        },
+    }))
+
+    const boundsRef = useRef<DOMRect | null>(null)
+
+    const updateBounds = useCallback(() => {
+        if (inputRef.current) {
+            boundsRef.current = inputRef.current.getBoundingClientRect()
+        }
+    }, [])
+
+    useEffect(() => {
+        globalThis.window.addEventListener('resize', updateBounds)
+        return () => globalThis.window.removeEventListener('resize', updateBounds)
+    }, [updateBounds])
+
+    const handleMouseEnter = useCallback(() => {
+        updateBounds()
+        if (inputRef.current) {
+            boundsRef.current = inputRef.current.getBoundingClientRect()
+        }
+    }, [updateBounds])
+
     const handleMouseMove = useCallback((e: React.MouseEvent<HTMLFieldSetElement>) => {
-        const rect = e.currentTarget.getBoundingClientRect()
+        const rect = boundsRef.current || e.currentTarget.getBoundingClientRect()
         const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width))
         const percent = (x / rect.width) * 100
 
@@ -86,6 +111,7 @@ export const ProgressBar = forwardRef<ProgressBarRef, ProgressBarProps>(({ color
     return (
         <fieldset
             className="react-riyils-viewer__progress-container"
+            onMouseEnter={handleMouseEnter}
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}
             aria-label="Video progress control"
@@ -127,6 +153,24 @@ export const ProgressBar = forwardRef<ProgressBarRef, ProgressBarProps>(({ color
                     '--progress-color': color
                 } as React.CSSProperties}
             />
+            <div
+                ref={timeDisplayRef}
+                style={{
+                    position: 'absolute',
+                    left: 0,
+                    bottom: 32,
+                    color: 'rgba(255, 255, 255, 0.9)',
+                    fontSize: '12px',
+                    fontFamily: 'SF Pro Text, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif',
+                    fontVariantNumeric: 'tabular-nums',
+                    textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+                    pointerEvents: 'none',
+                    userSelect: 'none',
+                    zIndex: 10
+                }}
+            >
+                0:00 / 0:00
+            </div>
         </fieldset>
     )
 })

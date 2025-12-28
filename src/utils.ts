@@ -4,9 +4,14 @@ export function isIosSafari(): boolean {
     return /iPad|iPhone|iPod/.test(ua) && !/MSStream/.test(ua)
 }
 
+let lastHaptic = 0
 export function triggerHaptic() {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
-        navigator.vibrate(10)
+        const now = Date.now()
+        if (now - lastHaptic > 50) {
+            navigator.vibrate(10)
+            lastHaptic = now
+        }
     }
 }
 export function throttle<T extends (...args: any[]) => any>(
