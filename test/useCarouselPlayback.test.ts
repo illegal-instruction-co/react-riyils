@@ -27,6 +27,7 @@ describe('useCarouselPlayback', () => {
 
     beforeEach(() => {
         video = document.createElement('video')
+        video.src = 'test.mp4'
         ref = { current: video }
         observer = {
             play: jest.fn(),
@@ -44,7 +45,7 @@ describe('useCarouselPlayback', () => {
 
     it('should play video when active', async () => {
         video.play = jest.fn().mockResolvedValue(undefined)
-        const { result } = renderHook(() => useCarouselPlayback(ref, 'id', true, false, true, observer))
+        renderHook(() => useCarouselPlayback(ref, 'id', true, false, true, observer))
         await act(async () => {
             jest.runOnlyPendingTimers()
         })
@@ -55,7 +56,7 @@ describe('useCarouselPlayback', () => {
 
     it('should pause and reset video when not active', () => {
         video.pause = jest.fn()
-        const { result } = renderHook(() => useCarouselPlayback(ref, 'id', false, false, true, observer))
+        renderHook(() => useCarouselPlayback(ref, 'id', false, false, true, observer))
         expect(video.pause).toHaveBeenCalled()
         expect(video.currentTime).toBe(0)
         expect(observer.pause).toHaveBeenCalledWith('id', 'auto')
