@@ -52,7 +52,19 @@ export function useCarouselPlayback(
         const tryPlay = async () => {
             if (isCancelled || !mountedRef.current) return
 
+            if (!video.src) {
+                retryRef.current = globalThis.window.setTimeout(tryPlay, RETRY_MS)
+                return
+            }
+
+            if (!video.hasAttribute('playsinline')) video.setAttribute('playsinline', '')
+            if (!video.hasAttribute('webkit-playsinline')) video.setAttribute('webkit-playsinline', '')
+            if (!video.hasAttribute('muted')) video.setAttribute('muted', '')
+            video.muted = true
+
             try {
+                if (!video.paused) return
+
                 await video.play()
 
                 if (isCancelled || !mountedRef.current) {
