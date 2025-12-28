@@ -1,9 +1,16 @@
 
 
 const CACHE_NAME = 'riyils-media-v1'
-const MAX_AGE_SECONDS = 7 * 24 * 60 * 60
+
+
+function isMobile(): boolean {
+    if (typeof navigator === 'undefined') return false
+    return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+}
 
 export async function cacheVideo(url: string): Promise<void> {
+    if (isMobile()) return
+
     try {
         const cache = await caches.open(CACHE_NAME)
         const match = await cache.match(url)
@@ -18,6 +25,8 @@ export async function cacheVideo(url: string): Promise<void> {
 }
 
 export async function getCachedVideoUrl(url: string): Promise<string | null> {
+    if (isMobile()) return null
+
     try {
         const cache = await caches.open(CACHE_NAME)
         const response = await cache.match(url)
@@ -34,6 +43,8 @@ export async function getCachedVideoUrl(url: string): Promise<string | null> {
 }
 
 export async function cleanupCache(): Promise<void> {
+    if (isMobile()) return
+
     try {
         const cache = await caches.open(CACHE_NAME)
         const keys = await cache.keys()
