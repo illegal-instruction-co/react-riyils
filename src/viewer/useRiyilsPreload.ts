@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react'
-import { preloadVideoSource } from '../use-video-source'
+
 import type { Video } from './RiyilsViewer'
 
 export function useRiyilsPreload(
@@ -14,7 +14,15 @@ export function useRiyilsPreload(
             if (!video) return
             if (preloadedRef.current.has(video.id)) return
             preloadedRef.current.add(video.id)
-            preloadVideoSource('viewer', video.id, video.videoUrl)
+            if (!video.videoUrl) return
+
+            const url = typeof video.videoUrl === 'string'
+                ? video.videoUrl
+                : (video.videoUrl.high || video.videoUrl.mid || video.videoUrl.low)
+
+            if (!url) return
+
+            fetch(url, { method: 'HEAD', mode: 'no-cors' }).catch(() => { })
         },
         []
     )

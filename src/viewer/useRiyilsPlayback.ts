@@ -3,41 +3,7 @@ import { usePlaybackController } from '../playback/PlaybackControllerContext'
 import { useRiyilsObserver } from '../observe/useRiyilsObserver'
 import { throttle } from '../utils'
 
-const PLAY_VERIFY_MS = 260
-const READY_TIMEOUT_MS = 1200
-
-function waitForReady(video: HTMLVideoElement): Promise<boolean> {
-    if (!video.src) return Promise.resolve(false)
-    if (video.readyState >= 1) return Promise.resolve(true)
-
-    return new Promise((resolve) => {
-        let done = false
-
-        const cleanup = () => {
-            video.removeEventListener('loadedmetadata', onReady)
-            video.removeEventListener('canplay', onReady)
-            video.removeEventListener('loadeddata', onReady)
-            video.removeEventListener('error', onError)
-        }
-
-        const finish = (ok: boolean) => {
-            if (done) return
-            done = true
-            cleanup()
-            resolve(ok)
-        }
-
-        const onReady = () => finish(video.readyState >= 1)
-        const onError = () => finish(false)
-
-        video.addEventListener('loadedmetadata', onReady, { once: true })
-        video.addEventListener('canplay', onReady, { once: true })
-        video.addEventListener('loadeddata', onReady, { once: true })
-        video.addEventListener('error', onError, { once: true })
-
-        setTimeout(() => finish(video.readyState >= 1), READY_TIMEOUT_MS)
-    })
-}
+const PLAY_VERIFY_MS = 3000
 
 type Observer = ReturnType<typeof useRiyilsObserver>
 
@@ -71,6 +37,7 @@ export function useRiyilsPlayback(
     const retryingRef = useRef(false)
     const activeTokenRef = useRef(0)
     const waitingTimeoutRef = useRef<number | null>(null)
+    const stallTimeoutRef = useRef<number | null>(null)
     const activeIdRef = useRef<string | undefined>()
     const mountedRef = useRef(true)
     const lastSeekTsRef = useRef(0)
@@ -89,7 +56,7 @@ export function useRiyilsPlayback(
     const applyPlayback = useCallback(async () => {
         const video = getVideoEl(currentIndex)
 
-        if (!video || video.readyState < 1) {
+        if (!video) {
             return
         }
 
@@ -102,18 +69,6 @@ export function useRiyilsPlayback(
             return
         }
 
-        if (video.readyState < 2) {
-            if (now - lastSeekTsRef.current > 800) {
-                setHasStarted(false)
-                video.load()
-            }
-            return
-        }
-
-        if (video.readyState < 3) {
-            return
-        }
-
         const token = ++playTokenRef.current
 
         if (!isPlaying && !isSpeedUp) {
@@ -122,9 +77,6 @@ export function useRiyilsPlayback(
             observer.pause(id, 'user')
             return
         }
-
-        const ready = await waitForReady(video)
-        if (!mountedRef.current || !ready || playTokenRef.current !== token) return
 
         const result = await playbackController.play({
             scope: 'viewer',
@@ -159,6 +111,37 @@ export function useRiyilsPlayback(
         observer,
     ])
 
+    const onRetry = useCallback(() => {
+        if (retryingRef.current || !mountedRef.current) return
+        retryingRef.current = true
+
+        const id = getActiveId()
+        if (!id) {
+            retryingRef.current = false
+            return
+        }
+
+        setHasError(false)
+        setIsPlaying(true)
+        setRetryCount((c) => c + 1)
+        observer.retry(id)
+
+        requestAnimationFrame(() => {
+            const v = getVideoEl(currentIndex)
+            if (!v) {
+                retryingRef.current = false
+                return
+            }
+
+            v.pause()
+            v.currentTime = 0
+            v.load()
+
+            retryingRef.current = false
+            void applyPlayback()
+        })
+    }, [applyPlayback, currentIndex, getActiveId, getVideoEl, observer])
+
     useEffect(() => {
         playTokenRef.current++
     }, [currentIndex])
@@ -185,19 +168,30 @@ export function useRiyilsPlayback(
 
         const markLoading = () => {
             if (id) observer.waiting(id)
-            if (waitingTimeoutRef.current != null) return
-            waitingTimeoutRef.current = globalThis.window.setTimeout(() => {
+
+            waitingTimeoutRef.current ??= globalThis.window.setTimeout(() => {
                 if (mountedRef.current && token === activeTokenRef.current) {
                     setHasStarted(false)
                 }
                 waitingTimeoutRef.current = null
-            }, 80)
+            }, 80);
+
+            stallTimeoutRef.current ??= globalThis.window.setTimeout(() => {
+                if (mountedRef.current && token === activeTokenRef.current) {
+                    onRetry()
+                }
+                stallTimeoutRef.current = null
+            }, 5000);
         }
 
         const markStarted = () => {
             if (id) observer.playing(id)
             if (mountedRef.current && token === activeTokenRef.current) {
                 setHasStarted(true)
+            }
+            if (stallTimeoutRef.current) {
+                clearTimeout(stallTimeoutRef.current)
+                stallTimeoutRef.current = null
             }
         }
 
@@ -215,8 +209,12 @@ export function useRiyilsPlayback(
                 clearTimeout(waitingTimeoutRef.current)
                 waitingTimeoutRef.current = null
             }
+            if (stallTimeoutRef.current) {
+                clearTimeout(stallTimeoutRef.current)
+                stallTimeoutRef.current = null
+            }
         }
-    }, [currentIndex, getVideoEl, getActiveId, observer])
+    }, [currentIndex, getVideoEl, getActiveId, observer, onRetry])
 
     useEffect(() => {
         const id = getActiveId()
@@ -286,6 +284,12 @@ export function useRiyilsPlayback(
 
     const onError = useCallback(() => {
         if (!mountedRef.current) return
+
+        if (retryCount === 0) {
+            onRetry()
+            return
+        }
+
         const id = getActiveId()
         if (!id) return
         setHasError(true)
@@ -294,38 +298,7 @@ export function useRiyilsPlayback(
         requestAnimationFrame(() => {
             playbackController.reset('viewer', id)
         })
-    }, [getActiveId, observer, playbackController])
-
-    const onRetry = useCallback(() => {
-        if (retryingRef.current || !mountedRef.current) return
-        retryingRef.current = true
-
-        const id = getActiveId()
-        if (!id) {
-            retryingRef.current = false
-            return
-        }
-
-        setHasError(false)
-        setIsPlaying(true)
-        setRetryCount((c) => c + 1)
-        observer.retry(id)
-
-        requestAnimationFrame(() => {
-            const v = getVideoEl(currentIndex)
-            if (!v) {
-                retryingRef.current = false
-                return
-            }
-
-            v.pause()
-            v.currentTime = 0
-            v.load()
-
-            retryingRef.current = false
-            void applyPlayback()
-        })
-    }, [applyPlayback, currentIndex, getActiveId, getVideoEl, observer])
+    }, [getActiveId, observer, playbackController, onRetry, retryCount])
 
     const playbackState = useMemo(
         () => ({
