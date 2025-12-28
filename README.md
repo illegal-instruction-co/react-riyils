@@ -4,14 +4,17 @@ React Riyils is a library for building high-performance vertical video experienc
 
 React Riyils handles browser autoplay policies, resource management, and mobile gesture interactions.
 
+[**Live Demo**](https://illegal-instruction-co.github.io/react-riyils/)
+
 ---
 
 ## Core Documentation
 
 - [**Quick Start & Setup**](./docs/setup.md) - Installation, CSS imports, and the mandatory Playback Provider.
 - [**Components Reference**](./docs/components.md) - Detailed props and types for `RiyilsViewer`, `RiyilsCarousel`, and `RiyilsExplore`.
-- [**Interaction & Gestures**](./docs/interaction.md) - [Monetization / Ad Injection](docs/monetization.md)
-- [Keyboard Shortcuts](docs/keyboard-shortcuts.md), and haptic feedback.
+- [**Interaction & Gestures**](./docs/interaction.md) - Mobile gestures and haptic feedback.
+- [**Monetization**](docs/monetization.md) - Ad Injection system.
+- [**Keyboard Shortcuts**](docs/keyboard-shortcuts.md) - Desktop navigation support.
 - [**Observability & Analytics**](./docs/observability.md) - Telemetry infrastructure, log levels, and custom instrumentation.
 
 ---
