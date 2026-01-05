@@ -1,6 +1,6 @@
 :root {
   --rr-slide-w-mob: 75vw;
-  --rr-slide-h-mob: 70vh;
+  --rr-slide-h-mob: 40vh;
   --rr-slide-w-desk: 60vw;
   --rr-slide-h-desk: 540px;
   --rr-primary: #3b82f6;
@@ -796,6 +796,7 @@
   pointer-events: none;
 }
 
+
 .react-riyils-viewer__caption-container {
   position: absolute;
   bottom: 0;
@@ -807,6 +808,34 @@
   flex-direction: column;
   justify-content: flex-end;
   height: 100%;
+}
+
+.react-riyils__custom-pagination {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  z-index: var(--z-ui);
+  pointer-events: none;
+}
+
+@media (min-width: 768px) {
+  .react-riyils__custom-pagination {
+    display: none !important;
+  }
+}
+
+.react-riyils__custom-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #6aa1f4;
+  opacity: 1;
+  box-shadow: none;
 }
 
 .react-riyils-viewer__caption-sheet {

@@ -13,6 +13,8 @@ interface CarouselSlideProps {
     onRetry: () => void
     observer: Observer
     videoId: string
+    onMouseEnter?: () => void
+    onMouseLeave?: () => void
     children: React.ReactNode
 }
 
@@ -24,6 +26,8 @@ export const CarouselSlide = memo(function CarouselSlide({
     onRetry,
     observer,
     videoId,
+    onMouseEnter,
+    onMouseLeave,
     children,
 }: Readonly<CarouselSlideProps>) {
     const disabled = active && hasError
@@ -37,6 +41,8 @@ export const CarouselSlide = memo(function CarouselSlide({
                 observer.play(videoId, 'user')
                 onClick()
             }}
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
             disabled={disabled}
             aria-label={active ? t.slideActiveAriaLabel : t.slideInactiveAriaLabel}
         >

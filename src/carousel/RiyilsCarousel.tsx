@@ -14,10 +14,10 @@ import { useCarouselRegistry } from './useCarouselRegistry'
 import { useRiyilsObserver } from '../observe/useRiyilsObserver'
 import { throttle } from '../utils'
 
-import './video-swiper.css'
 import 'swiper/css'
 import 'swiper/css/effect-coverflow'
 import 'swiper/css/virtual'
+import './video-swiper.css'
 
 
 
@@ -112,14 +112,27 @@ function RiyilsCarouselInner({
                 watchSlidesProgress
                 initialSlide={currentIndex}
                 virtual={{ addSlidesBefore: 2, addSlidesAfter: 2, enabled: true, cache: false }}
-                effect="coverflow"
-                coverflowEffect={{
-                    rotate: 0,
-                    stretch: 0,
-                    depth: 100,
-                    modifier: 1,
-                    slideShadows: true,
+                breakpoints={{
+                    0: {
+                        coverflowEffect: {
+                            rotate: 0,
+                            stretch: -25,
+                            depth: 50,
+                            modifier: 1,
+                            slideShadows: true,
+                        }
+                    },
+                    768: {
+                        coverflowEffect: {
+                            rotate: 0,
+                            stretch: -35,
+                            depth: 50,
+                            modifier: 1,
+                            slideShadows: true,
+                        }
+                    }
                 }}
+                effect="coverflow"
                 onSwiper={(s) => {
                     swiperRef.current = s
                 }}
@@ -154,6 +167,15 @@ function RiyilsCarouselInner({
                     )
                 })}
             </Swiper>
+
+            <div className="react-riyils__custom-pagination">
+                {[0, 1, 2].map((i) => (
+                    <div
+                        key={i}
+                        className="react-riyils__custom-dot"
+                    />
+                ))}
+            </div>
 
             <ActiveAutoAdvanceBridge
                 enabled={enableAutoAdvance}

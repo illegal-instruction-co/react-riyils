@@ -11,6 +11,7 @@ export function useCarouselPlayback(
     videoId: string,
     isActive: boolean,
     isPreview: boolean,
+    isHovered: boolean,
     shouldLoad: boolean,
     observer: Observer
 ) {
@@ -49,6 +50,22 @@ export function useCarouselPlayback(
 
         let isCancelled = false
 
+        const handlePreview = () => {
+            if (isPreview && !isActive) {
+                timerRef.current = globalThis.window.setTimeout(() => {
+                    if (!mountedRef.current || isCancelled) return
+
+                    video.pause()
+                    video.currentTime = 0
+                    observer.pause(videoId, 'auto')
+
+                    if (isHovered) {
+                        retryRef.current = globalThis.window.setTimeout(tryPlay, RETRY_MS)
+                    }
+                }, PREVIEW_DURATION_MS)
+            }
+        }
+
         const tryPlay = async () => {
             if (isCancelled || !mountedRef.current) return
 
@@ -72,35 +89,17 @@ export function useCarouselPlayback(
                     return
                 }
 
-                if (!isActive && !isPreview) {
-                    video.pause()
-                    return
-                }
-
                 observer.play(videoId, isActive ? 'auto' : 'resume')
-
-                if (isPreview && !isActive) {
-                    timerRef.current = globalThis.window.setTimeout(() => {
-                        if (!mountedRef.current || isCancelled) return
-
-                        video.pause()
-                        video.currentTime = 0
-                        observer.pause(videoId, 'auto')
-
-                        retryRef.current = globalThis.window.setTimeout(tryPlay, RETRY_MS)
-                    }, PREVIEW_DURATION_MS)
-                }
+                handlePreview()
 
             } catch {
                 if (isCancelled || !mountedRef.current) return
-
-
 
                 retryRef.current = globalThis.window.setTimeout(tryPlay, RETRY_MS)
             }
         }
 
-        if (isActive || isPreview) {
+        if (isActive || (isPreview && isHovered)) {
             void tryPlay()
         } else {
             video.pause()
@@ -115,7 +114,7 @@ export function useCarouselPlayback(
                 video.pause()
             }
         }
-    }, [videoRef, videoId, isActive, isPreview, shouldLoad, hasError, observer])
+    }, [videoRef, videoId, isActive, isPreview, isHovered, shouldLoad, hasError, observer])
 
     useEffect(() => {
         if (!hasError && shouldLoad && isActive) {

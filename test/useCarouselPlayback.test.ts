@@ -45,7 +45,7 @@ describe('useCarouselPlayback', () => {
 
     it('should play video when active', async () => {
         video.play = jest.fn().mockResolvedValue(undefined)
-        renderHook(() => useCarouselPlayback(ref, 'id', true, false, true, observer))
+        renderHook(() => useCarouselPlayback(ref, 'id', true, false, false, true, observer))
         await act(async () => {
             jest.runOnlyPendingTimers()
         })
@@ -56,14 +56,14 @@ describe('useCarouselPlayback', () => {
 
     it('should pause and reset video when not active', () => {
         video.pause = jest.fn()
-        renderHook(() => useCarouselPlayback(ref, 'id', false, false, true, observer))
+        renderHook(() => useCarouselPlayback(ref, 'id', false, false, false, true, observer))
         expect(video.pause).toHaveBeenCalled()
         expect(video.currentTime).toBe(0)
         expect(observer.pause).toHaveBeenCalledWith('id', 'auto')
     })
 
     it('should set error and call observer.error on error', () => {
-        const { result } = renderHook(() => useCarouselPlayback(ref, 'id', true, false, true, observer))
+        const { result } = renderHook(() => useCarouselPlayback(ref, 'id', true, false, false, true, observer))
         act(() => {
             result.current.onError()
         })
@@ -73,14 +73,14 @@ describe('useCarouselPlayback', () => {
 
     it('should not play if shouldLoad is false', () => {
         video.play = jest.fn()
-        renderHook(() => useCarouselPlayback(ref, 'id', true, false, false, observer))
+        renderHook(() => useCarouselPlayback(ref, 'id', true, false, false, false, observer))
         expect(video.play).not.toHaveBeenCalled()
     })
 
 
     it('should retry and call observer.retry', () => {
         video.load = jest.fn()
-        const { result } = renderHook(() => useCarouselPlayback(ref, 'id', true, false, true, observer))
+        const { result } = renderHook(() => useCarouselPlayback(ref, 'id', true, false, false, true, observer))
         act(() => {
             result.current.retry()
         })
@@ -92,7 +92,7 @@ describe('useCarouselPlayback', () => {
 
     it('should cleanup timers on unmount', () => {
         video.play = jest.fn().mockResolvedValue(undefined)
-        const { unmount } = renderHook(() => useCarouselPlayback(ref, 'id', true, false, true, observer))
+        const { unmount } = renderHook(() => useCarouselPlayback(ref, 'id', true, false, false, true, observer))
         unmount()
         expect(jest.getTimerCount()).toBe(0)
     })

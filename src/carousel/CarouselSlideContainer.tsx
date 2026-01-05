@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback } from 'react'
+import React, { useRef, useEffect, useCallback, useState } from 'react'
 import { useSharedVideo } from '../use-shared-video'
 import { useVideoSource } from '../use-video-source'
 import { CarouselSlide } from './CarouselSlide'
@@ -31,6 +31,7 @@ export const CarouselSlideContainer = React.memo(function CarouselSlideContainer
     onSlideClick: (index: number, isActive: boolean) => void
 }>) {
     const containerRef = useRef<HTMLDivElement>(null)
+    const [isHovered, setIsHovered] = useState(false)
 
     const videoRef = useSharedVideo(containerRef, video.id, 'react-riyils__video', shouldLoad, video.thumbnailUrl)
 
@@ -46,6 +47,7 @@ export const CarouselSlideContainer = React.memo(function CarouselSlideContainer
         video.id,
         isActive,
         isPreview,
+        isHovered,
         shouldLoad,
         observer
     )
@@ -59,6 +61,8 @@ export const CarouselSlideContainer = React.memo(function CarouselSlideContainer
     }, [playback])
 
     const handleClick = useCallback(() => onSlideClick(index, isActive), [index, isActive, onSlideClick])
+    const handleMouseEnter = useCallback(() => setIsHovered(true), [])
+    const handleMouseLeave = useCallback(() => setIsHovered(false), [])
 
     return (
         <CarouselSlide
@@ -69,6 +73,8 @@ export const CarouselSlideContainer = React.memo(function CarouselSlideContainer
             observer={observer}
             onClick={handleClick}
             onRetry={playback.retry}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
         >
             <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
         </CarouselSlide>
