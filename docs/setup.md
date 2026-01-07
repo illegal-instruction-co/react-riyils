@@ -37,3 +37,20 @@ function App() {
   )
 }
 ```
+
+## Internationalization
+
+React Riyils supports internationalization through translation props. See the [Components Reference](./components.md#internationalization-i18n) for detailed information on customizing UI labels and accessibility text.
+
+### TypeScript Support
+
+When you install `react-riyils`, TypeScript types are automatically included. You can import translation interfaces:
+
+```tsx
+import {
+  RiyilsViewer,
+  RiyilsCarousel,
+  type RiyilsTranslations,
+  type ReactRiyilsTranslations
+} from 'react-riyils'
+```
