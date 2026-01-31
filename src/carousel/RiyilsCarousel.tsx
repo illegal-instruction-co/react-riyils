@@ -37,7 +37,26 @@ function RiyilsCarouselInner({
     const observer = useRiyilsObserver('carousel')
 
     const swiperRef = useRef<SwiperType | null>(null)
-    const [activeIndex, setActiveIndex] = useState(currentIndex)
+
+    const targetStartIndex = useMemo(() => {
+        if (currentIndex === 0 && videos.length >= 3) {
+            return Math.floor(videos.length / 2)
+        }
+        return -1
+    }, [currentIndex, videos.length])
+
+    const hasOverride = targetStartIndex !== -1
+    const effectiveInitialIndex = hasOverride ? targetStartIndex : currentIndex
+
+    const [activeIndex, setActiveIndex] = useState(effectiveInitialIndex)
+
+    const isRedirectingRef = useRef(hasOverride)
+
+    useEffect(() => {
+        if (!hasOverride) {
+            isRedirectingRef.current = false
+        }
+    }, [hasOverride])
 
     const registry = useCarouselRegistry()
     const preloadAround = useCarouselPreload(videos)
@@ -45,13 +64,34 @@ function RiyilsCarouselInner({
     const t = useMemo(() => ({ ...defaultReactRiyilsTranslations, ...translations }), [translations])
 
     useEffect(() => {
+        if (hasOverride && currentIndex !== targetStartIndex) {
+            onVideoChange(targetStartIndex)
+        }
+    }, [hasOverride, currentIndex, targetStartIndex, onVideoChange])
+
+    useEffect(() => {
+        if (isRedirectingRef.current) {
+            if (currentIndex === targetStartIndex) {
+                isRedirectingRef.current = false
+            } else {
+                return
+            }
+        }
+
         if (activeIndex !== currentIndex) {
             setActiveIndex(currentIndex)
             if (swiperRef.current && !swiperRef.current.destroyed) {
                 swiperRef.current.slideTo(currentIndex, 0)
             }
         }
-    }, [currentIndex, activeIndex])
+    }, [currentIndex, activeIndex, targetStartIndex])
+
+    useEffect(() => {
+        if (hasOverride && activeIndex === 0 && currentIndex === 0) {
+            setActiveIndex(targetStartIndex)
+            isRedirectingRef.current = true
+        }
+    }, [hasOverride, targetStartIndex, activeIndex, currentIndex])
 
     useEffect(() => {
         preloadAround(activeIndex)
@@ -110,7 +150,7 @@ function RiyilsCarouselInner({
                 observer
                 observeParents
                 watchSlidesProgress
-                initialSlide={currentIndex}
+                initialSlide={effectiveInitialIndex}
                 virtual={{ addSlidesBefore: 2, addSlidesAfter: 2, enabled: true, cache: false }}
                 breakpoints={{
                     0: {
